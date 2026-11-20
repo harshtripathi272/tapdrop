@@ -1,5 +1,7 @@
 # Build output
 build/
+dist/
+__pycache__/
 
 # Signing keys. build.ps1 generates a throwaway debug key when none exists.
 *.keystore

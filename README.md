@@ -1,80 +1,240 @@
-# TapDrop
+<p align="center">
+  <img src="docs/banner.svg" alt="TapDrop. Tap your watch on a phone. It gets what you chose to share: a contact, Wi-Fi, a payment request, your location, a link, or anything an NFC tag can hold." width="820">
+</p>
 
-A Wear OS app that turns a Galaxy Watch into a programmable NFC tag. Pick
-something on the watch, tap your wrist on a phone, and the phone gets it. The
-receiving phone needs no app.
+<p align="center">
+  <b>Turn a Galaxy Watch into an NFC tag you can program.</b><br>
+  Pick something on your wrist, tap any phone, and that phone gets it. The other phone needs no app.
+</p>
 
-## Status
+## Start here
 
-Prototype. Tested on a Galaxy Watch8 Classic (SM-L500, Android 17) against a
-Galaxy S24 Ultra (Android 17). Not tested on an iPhone.
+| You have | Go to |
+|---|---|
+| **A Galaxy Watch4 or later, or another Wear OS watch with NFC** | [Quick start](#quick-start): a coding assistant sets it up in about ten minutes. |
+| **No coding assistant** | [Doing it by hand](#doing-it-by-hand): the same steps as commands. |
+| **An Apple Watch, an older Tizen Galaxy Watch, a Fitbit or a Garmin** | TapDrop can't run there. It needs Wear OS. |
+| **Want to see it first** | [What you get](#what-you-get): screenshots from the watch. |
 
-| Item | What the phone receives | Result on the S24 Ultra |
-|---|---|---|
-| Contact | vCard | Save-contact prompt |
-| Wi-Fi | Wi-Fi Simple Configuration record | Join-network prompt |
-| Payment request | Link to `web/pay.html` carrying a UPI request | UPI app chooser |
-| Link | URL | Opens |
-| Location | Google Maps link to the watch's current position | Not tested yet |
+[How it works](#how-it-works) · [Quick start](#quick-start) · [What you get](#what-you-get) ·
+[Sharing with the app closed](#sharing-with-the-app-closed) · [Learn from phone](#learn-from-phone) ·
+[Supported devices](#supported-devices) · [Doing it by hand](#doing-it-by-hand) ·
+[Removing it](#removing-it) · [Questions](#questions-people-ask) · [Building](#building-from-source)
 
-## Using it
+## How it works
 
-The home screen is a list of your items. Tap one to open its share screen,
-then hold the watch to a phone. Hold a row to edit or delete it. The last row
-adds a new item. On a payment request, the bezel sets the amount in steps of
-10 rupees.
+An NFC sticker is a tiny piece of storage that any phone can read by touching it. Android lets an
+app answer a phone the same way a sticker would. TapDrop does that from your watch, and decides
+what the "sticker" holds at the moment of the tap.
 
-The watch answers a phone only while a share screen is open, and only with
-that item.
+| Step | What happens |
+|---|---|
+| **Choose** | Open an item on the watch: your contact, a Wi-Fi network, a payment request, your location, a link. |
+| **Tap** | Hold the watch against a phone. The read takes about a tenth of a second and the watch buzzes. |
+| **Done** | The phone offers to save the contact, join the network, open the payment screen or open the link. |
 
-## Limits
+The receiving phone installs nothing and pairs with nothing. Details are in
+[docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md).
 
-- Samsung Health registers the same NFC tag ID, and only the foreground app
-  can claim priority. So the share screen has to be on screen.
-- Items are typed on the watch keyboard. There is no phone companion app yet.
-- `web/pay.html` has to be reachable by the payer's phone. It is not hosted
-  anywhere yet.
-- Wi-Fi passwords are stored unencrypted in the app's private storage on the
-  watch.
+## Quick start
 
-## Layout
+You need the watch, a computer on the same Wi-Fi, and a coding assistant that can run commands on
+that computer: Claude Code, Codex, Gemini CLI or similar. Python 3 has to be installed. Nothing has
+to be compiled.
 
-- `tapdrop-spike/` — the watch app. Plain Java, framework classes only.
-  - `NdefTagService.java` answers NFC readers as a Type 4 tag.
-  - `Kinds.java` defines each item type: fields, labels, NDEF record.
-  - `Ndef.java` builds the NDEF records.
-  - `Item.java`, `Store.java` hold the user's items.
-  - `MainActivity.java` is the list, `ShareActivity.java` and `CardView.java`
-    the share screen, `EditActivity.java` the add and edit forms.
-  - `build.ps1` builds and installs without Gradle.
-- `web/pay.html` — static page that hands a UPI request to the payer's app.
-- `reconnect-watch.ps1`, `pair-device.ps1` — adb over Wi-Fi helpers.
+| Where | What to do |
+|---|---|
+| **1. On the watch** | Settings → About watch → Software information → tap **Software version** five times. Then Settings → Developer options → turn on **ADB debugging** and **Wireless debugging**. |
+| **2. On your computer** | `git clone https://github.com/harshtripathi272/tapdrop`, open that folder in your assistant, and paste the prompt from [`PROMPT.md`](PROMPT.md) with your watch model filled in. |
+| **3. Follow along** | The assistant installs Google's `adb` if you lack it, pairs with the watch, installs TapDrop, asks what you want to share, and watches a test tap with you. |
 
-## Build
+Cloning matters. The assistant follows this repo's own setup procedure in
+[`skill/tapdrop-watch/`](skill/tapdrop-watch/SKILL.md) and installs the app bundled there, so it is
+not inventing steps.
 
-Windows, PowerShell. Needs JDK 17 at the path set in `build.ps1`. The script
-downloads Android build-tools 35 and platform 35 from Google on first run and
-checks them against Google's published checksums.
+Two things stay in your hands. You type the watch's six digit pairing code yourself, and you decide
+on the watch whether to switch on [one-tap sharing](#sharing-with-the-app-closed).
 
-    powershell -NoProfile -ExecutionPolicy Bypass -File tapdrop-spike\build.ps1
+Claude users can also install the setup procedure as a skill: package `skill/tapdrop-watch` into a
+`.skill` file and add it to Claude.
 
-It installs to the first connected device that reports itself as a watch. Pass
-`-NoInstall` to build only.
+## What you get
 
-## Seeding an item over adb
+| | | |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/home.png" width="230" alt="The TapDrop home list on the watch: a contact, a Wi-Fi network and a payment request in one rounded group"> | <img src="docs/screenshots/share-contact.png" width="230" alt="The share screen for a contact, with rings travelling outward and an Edit button"> | <img src="docs/screenshots/share-pay.png" width="230" alt="The share screen for a payment request showing an amount in rupees"> |
+| *Your items* | *Ready to tap* | *Pay me, amount set with the bezel* |
+| <img src="docs/screenshots/home-add.png" width="230" alt="Further down the home list: the kinds of item that can be added"> | <img src="docs/screenshots/learn.png" width="230" alt="The Learn screen, waiting for an NFC tag app to write to the watch"> | <img src="docs/screenshots/quick-tap.png" width="230" alt="The Quick tap screen: choose which item is shared while TapDrop is closed"> |
+| *Everything you can add* | *Learn from phone* | *Quick tap* |
 
-For testing. Each command creates or replaces one item and opens its share
-screen.
+| Item | What the other phone gets |
+|---|---|
+| **Contact** | Your name, number and email, as a card it offers to save. |
+| **Wi-Fi** | A network and its password, as an offer to join. |
+| **Pay me** | A UPI payment request with the amount filled in. Turn the bezel to set the amount. |
+| **Location** | A map link to where the watch is right now. |
+| **Link** | Any web address: your Instagram, a portfolio, a video. |
+| **Learned tag** | Whatever an NFC tag app wrote to the watch. See [Learn from phone](#learn-from-phone). |
 
-    adb shell am start -n dev.tapdrop.spike/.MainActivity --es type contact --es name "Asha Rao" --es phone "+15550100"
-    adb shell am start -n dev.tapdrop.spike/.MainActivity --es type wifi --es ssid "Guest" --es pass "..."
-    adb shell am start -n dev.tapdrop.spike/.MainActivity --es type upi --es upi_id "name@bank" --es upi_name "Asha Rao" --es amount 250
-    adb shell am start -n dev.tapdrop.spike/.MainActivity --es type link --es label "Site" --es url "https://example.com"
-    adb shell am start -n dev.tapdrop.spike/.MainActivity --es type location
+The app is built to look like part of the watch: Samsung One UI's grouped rows, colours and type,
+with a curved scroll indicator. It is about 40 KB.
 
-Set where payment requests are sent, once:
+## Sharing with the app closed
 
-    adb shell am start -n dev.tapdrop.spike/.MainActivity --es pay_page "https://.../pay.html"
+Opening an item and tapping is the fast path: one tap. You don't have to open the app, though.
 
-A payment request moves no money. The payer sees the name and UPI ID in their
-own app and approves or declines there.
+**Quick tap.** If a phone taps the watch while TapDrop is closed, the watch shows "Select an app to
+use". Pick **TapDrop tag** and tap the phone again. The watch sends your quick-tap item. Choose
+which item that is, or "Nothing", on the Quick tap screen at the bottom of the home list.
+
+The second tap exists because Samsung Health answers the same NFC tag ID as TapDrop, so the watch
+asks which you meant. It also means a passing phone gets nothing unless you pick TapDrop on your own
+wrist.
+
+**One-tap sharing.** On the same screen, Turn on switches off Samsung Health's NFC tag service,
+using an Android setting made for this clash. TapDrop then answers straight away, with the app
+closed and with the screen off. It has two costs, and the watch tells you both before you agree:
+
+- Samsung Health's NFC tag feature, which some gym machines use, stops working.
+- Nobody is asked before your quick-tap item is sent. Any phone that touches the watch gets it.
+  Keep that item to something you would hand to a stranger.
+
+Turn off on the same screen gives the service back.
+
+## Learn from phone
+
+Add → **Learn from phone** turns the watch into an empty, writable tag. Open any NFC tag-writing app
+on a phone, such as NFC Tools, build a record, press Write and hold the phone to the watch. TapDrop
+saves what arrives as a new item and shares it back unchanged. It names the item from its contents.
+
+This is the quick way to load a Wi-Fi password without typing on a watch, and the way to share
+anything TapDrop has no form for: a phone number to call, plain text, an app link.
+
+The watch accepts writes only while the Learn screen is open. It copies the data ordinary NFC
+stickers hold. It cannot copy transit, access or payment cards, which rely on encryption and a fixed
+chip ID.
+
+## Supported devices
+
+| | Status |
+|---|---|
+| **Galaxy Watch8 Classic, Android 17** | Tested. Everything on this page except Location was checked on it. |
+| **Other Galaxy Watches from the Watch4 on** | Should work. Same platform, not yet tried. |
+| **Pixel Watch and other Wear OS watches with NFC** | Sharing should work. One-tap sharing knows about Samsung Health only. |
+| **Receiving phone: Android** | Tested with a Galaxy S24 Ultra on Android 17. |
+| **Receiving phone: iPhone** | Not tested. iPhones act on web links from a tag, so Link and Location are the likely ones to work. |
+| **Setup from Windows** | Tested. |
+| **Setup from macOS or Linux** | The helper script supports both, but nobody has run it there yet. |
+
+Tried it on something else? Please [tell us what happened](CONTRIBUTING.md).
+
+## Doing it by hand
+
+Everything the assistant does, you can run. You need Python 3 and Google's
+[platform-tools](https://developer.android.com/tools/releases/platform-tools) for `adb`.
+
+```sh
+# 1. See what is connected. The watch needs Wireless debugging on, same Wi-Fi as you.
+python skill/tapdrop-watch/scripts/watch.py status
+
+# 2. Pair once. On the watch: Wireless debugging > Pair new device.
+python skill/tapdrop-watch/scripts/watch.py pair-target   # prints the adb pair command to run
+python skill/tapdrop-watch/scripts/watch.py connect
+
+# 3. Install.
+python skill/tapdrop-watch/scripts/watch.py install
+
+# 4. Add what you want to share. You can also do this on the watch.
+python skill/tapdrop-watch/scripts/watch.py set contact name="Asha Rao" phone="+91 98765 43210"
+python skill/tapdrop-watch/scripts/watch.py set wifi ssid="Home 5G" pass="your-password"
+python skill/tapdrop-watch/scripts/watch.py set upi upi_id="asha@upi" upi_name="Asha Rao" amount=250
+python skill/tapdrop-watch/scripts/watch.py set link --id instagram label="Instagram" url="instagram.com/asha"
+python skill/tapdrop-watch/scripts/watch.py set location
+
+# 5. Open an item on the watch, tap a phone, then check what the watch saw.
+python skill/tapdrop-watch/scripts/watch.py log
+```
+
+`READ COMPLETE` in the log means the phone took the whole item. When something fails, the fixes
+are in [troubleshooting](skill/tapdrop-watch/references/troubleshooting.md).
+
+**Pay me needs one more step.** A phone will not hand a UPI link from a tag to GPay, PhonePe or
+Paytm, so TapDrop sends a link to a small page that forwards to them. Put
+[`web/pay.html`](web/pay.html) on any static web host and tell the watch where it is:
+
+```sh
+python skill/tapdrop-watch/scripts/watch.py pay-page https://your-host.example/pay.html
+```
+
+The page stores nothing. The request travels after the `#` in the link, which browsers never send
+to a server.
+
+When you are finished, turn **Wireless debugging** off on the watch. TapDrop does not need it.
+
+## Removing it
+
+```sh
+python skill/tapdrop-watch/scripts/watch.py uninstall
+```
+
+If you turned on one-tap sharing, turn it off on the Quick tap screen first, so Samsung Health gets
+its NFC service back.
+
+## Questions people ask
+
+**Does the other person need an app?** No. Their phone reads the watch like an NFC sticker.
+
+**Does my data go anywhere?** The app has no internet permission. Items stay on the watch and leave
+only over NFC, to a phone held against it.
+
+**Can someone read my watch without me knowing?** With the default settings, no. A tap either needs
+an item open on your screen, or needs you to pick TapDrop on the watch first. If you turn on one-tap
+sharing, yes: any phone that touches the watch gets your quick-tap item. That is the trade it makes.
+
+**Does Pay me take money?** No. It opens a payment request in the payer's own UPI app, with your
+name and ID showing. They approve or decline there.
+
+**Can it copy my metro card or office pass?** No. Those are not plain data and cannot be copied this
+way.
+
+**Does it drain the battery?** NFC only wakes when a phone is touching the watch. The share screen
+keeps the display on while it is open, so close it when you are done.
+
+**Is my Wi-Fi password safe in it?** It is stored unencrypted in the app's private storage, and
+anyone you tap receives it. Use a guest network.
+
+More in [SECURITY.md](SECURITY.md).
+
+## Building from source
+
+Setup uses a prebuilt app, so most people never need this. To build your own:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File watch-app\build.ps1
+```
+
+It needs Windows and a JDK 11 or newer. On first run it downloads Android build-tools 35 and
+platform 35 from Google and checks them against Google's published checksums. There is no Gradle
+and there are no dependencies: the script calls the Android tools directly, and the app uses only
+framework classes. It installs to the connected watch, or pass `-NoInstall`.
+
+| Path | What it is |
+|---|---|
+| `watch-app/` | The app. Start with `Kinds.java` and `NdefTagService.java`. |
+| `skill/tapdrop-watch/` | The setup procedure assistants follow, its helper script, and the bundled app. |
+| `web/pay.html` | The page that hands a UPI request to the payer's app. |
+| `tools/` | PowerShell helpers for pairing and reconnecting on Windows. |
+| `docs/` | [How it works](docs/HOW-IT-WORKS.md), and the images on this page. |
+
+Working on the code with an assistant? It will read [AGENTS.md](AGENTS.md).
+
+## Contributing
+
+The most useful contribution right now is a report from a watch or phone that isn't in the table
+above. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Licence
+
+Apache 2.0. See [LICENSE](LICENSE).
+
+TapDrop is an independent project. It is not affiliated with Samsung, Google or NPCI.

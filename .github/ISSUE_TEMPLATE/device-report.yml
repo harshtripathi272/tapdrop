@@ -1,0 +1,45 @@
+name: Device report
+description: Tell us how TapDrop behaved on your watch and phone. Reports of things working are as useful as bugs.
+title: "Device report: <watch> with <phone>"
+labels: ["device-report"]
+body:
+  - type: input
+    id: watch
+    attributes:
+      label: Watch
+      description: Model and Wear OS or Android version.
+      placeholder: Galaxy Watch7, Wear OS 5
+    validations:
+      required: true
+  - type: input
+    id: phone
+    attributes:
+      label: Phone you tapped
+      description: Model and Android or iOS version.
+      placeholder: iPhone 15, iOS 18
+    validations:
+      required: true
+  - type: input
+    id: computer
+    attributes:
+      label: Computer and assistant used for setup
+      placeholder: macOS 15, Claude Code
+  - type: checkboxes
+    id: worked
+    attributes:
+      label: What worked
+      options:
+        - label: Setup finished and TapDrop is on the watch
+        - label: Contact
+        - label: Wi-Fi
+        - label: Pay me
+        - label: Location
+        - label: Link
+        - label: Learn from phone
+        - label: Quick tap with the app closed, two taps
+        - label: One-tap sharing
+  - type: textarea
+    id: details
+    attributes:
+      label: What the phone showed, and anything that failed
+      description: For a failure, paste the output of `python skill/tapdrop-watch/scripts/watch.py log`. Remove anything personal first.

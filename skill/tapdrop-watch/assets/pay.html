@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Payment request</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #16181d; --muted: #666b75;
+    --line: #e3e1dc; --accent: #c96a00; --accent-ink: #ffffff; --warn: #a12a2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101114; --card: #1a1c21; --ink: #f1f1ee; --muted: #9a9fa8;
+      --line: #2b2e35; --accent: #ffb74d; --accent-ink: #1a1203; --warn: #ff8a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 380px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 28px 22px 22px; }
+  .label { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .amount { font-size: 56px; line-height: 1.05; font-weight: 700; margin: 10px 0 6px; font-variant-numeric: tabular-nums; }
+  .payee { font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+  .id { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+  .apps { display: grid; gap: 10px; margin-top: 24px; }
+  a.app {
+    display: block; text-align: center; text-decoration: none; padding: 14px 16px;
+    border-radius: 12px; font-weight: 600; color: var(--ink); border: 1px solid var(--line);
+  }
+  a.app.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  a.app:active { transform: scale(0.985); }
+  .note { color: var(--muted); font-size: 13px; margin: 18px 4px 0; }
+  .error { color: var(--warn); font-weight: 600; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card" id="request" hidden>
+    <div class="label">Payment request</div>
+    <div class="amount" id="amount"></div>
+    <div class="payee" id="payee"></div>
+    <div class="id" id="upi-id"></div>
+    <div class="apps" id="apps"></div>
+  </div>
+  <div class="card" id="bad" hidden>
+    <div class="label">Payment request</div>
+    <p class="error">This link is incomplete or damaged.</p>
+    <p class="id">Ask the sender to tap again.</p>
+  </div>
+  <p class="note" id="note" hidden>
+    This is only a request. Nothing is paid until you approve it in your own UPI app.
+    Check the name and UPI ID there before you pay.
+  </p>
+</main>
+<script>
+// Everything arrives in the part of the link after "#". Browsers never send that
+// part to a server, so this page stores and transmits nothing.
+(function () {
+  var params = new URLSearchParams(location.hash.slice(1));
+  var pa = (params.get('pa') || '').trim();
+  var pn = (params.get('pn') || '').trim().slice(0, 60);
+  var am = (params.get('am') || '').trim();
+
+  var idOk = /^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9._-]{2,64}$/.test(pa);
+  var amountOk = am === '' || /^\d{1,7}(\.\d{1,2})?$/.test(am);
+  if (!idOk || !amountOk) { document.getElementById('bad').hidden = false; return; }
+
+  var query = 'pa=' + encodeURIComponent(pa).replace(/%40/g, '@');
+  if (pn) query += '&pn=' + encodeURIComponent(pn);
+  if (am) query += '&am=' + Number(am).toFixed(2);
+  query += '&cu=INR';
+
+  document.getElementById('amount').textContent =
+    am ? '₹' + Number(am).toLocaleString('en-IN') : 'Any amount';
+  document.getElementById('payee').textContent = pn ? 'to ' + pn : 'to ' + pa;
+  document.getElementById('upi-id').textContent = pn ? pa : '';
+
+  var ua = navigator.userAgent;
+  var android = /Android/i.test(ua);
+  var ios = /iPhone|iPad|iPod/i.test(ua);
+  var generic = 'upi://pay?' + query;
+
+  // On Android an intent link opens one named app. On iPhone each app has its own scheme.
+  var apps = [
+    { name: 'Google Pay', pkg: 'com.google.android.apps.nbu.paisa.user', ios: 'gpay://upi/pay?' },
+    { name: 'PhonePe',    pkg: 'com.phonepe.app',                        ios: 'phonepe://pay?' },
+    { name: 'Paytm',      pkg: 'net.one97.paytm',                        ios: 'paytmmp://pay?' },
+    { name: 'BHIM',       pkg: 'in.org.npci.upiapp',                     ios: 'bhim://upi/pay?' }
+  ];
+
+  var list = document.getElementById('apps');
+  function add(label, href, primary) {
+    var a = document.createElement('a');
+    a.className = 'app' + (primary ? ' primary' : '');
+    a.textContent = label;
+    a.href = href;
+    list.appendChild(a);
+  }
+
+  if (android) {
+    add('Choose a UPI app', generic, true);
+    apps.forEach(function (app) {
+      add(app.name, 'intent://pay?' + query + '#Intent;scheme=upi;package=' + app.pkg + ';end', false);
+    });
+  } else if (ios) {
+    apps.forEach(function (app, i) { add(app.name, app.ios + query, i === 0); });
+  } else {
+    add('Open in a UPI app', generic, true);
+  }
+
+  document.getElementById('request').hidden = false;
+  document.getElementById('note').hidden = false;
+
+  // Android: go straight to the app chooser. The buttons stay as a fallback
+  // if the browser refuses to leave without a tap.
+  if (android && !sessionStorage.getItem('tapdrop-forwarded')) {
+    sessionStorage.setItem('tapdrop-forwarded', '1');
+    setTimeout(function () { location.href = generic; }, 250);
+  }
+})();
+</script>
+</body>
+</html>

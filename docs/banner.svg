@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="1200" height="420" role="img"
+     aria-label="TapDrop. Tap your watch on a phone to share a contact, Wi-Fi, a payment request, your location or a link.">
+  <rect width="1200" height="420" rx="28" fill="#0B0C0F"/>
+
+  <!-- The app icon -->
+  <g transform="translate(96 110)">
+    <rect width="200" height="200" rx="52" fill="#4D7CFE"/>
+    <g transform="translate(-0 -4) scale(1.852)">
+      <path d="M54 26 C54 26 41 42 41 52 A13 13 0 0 0 67 52 C67 42 54 26 54 26 Z" fill="#FFFFFF"/>
+      <path d="M38 72 Q54 80 70 72" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M31 79 Q54 91 77 79" fill="none" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="4.5" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- Wordmark and line -->
+  <g font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+    <text x="356" y="186" font-size="92" font-weight="700" fill="#FFFFFF">TapDrop</text>
+    <text x="360" y="244" font-size="31" fill="#B4B4B8">Tap your watch on a phone. It gets what you chose to share.</text>
+
+    <!-- What it shares, in the app's own colours -->
+    <g font-size="24" font-weight="600" fill="#FFFFFF">
+      <g transform="translate(360 282)">
+        <rect width="132" height="48" rx="24" fill="#5B74E8"/><text x="66" y="32" text-anchor="middle">Contact</text>
+      </g>
+      <g transform="translate(506 282)">
+        <rect width="100" height="48" rx="24" fill="#2FA968"/><text x="50" y="32" text-anchor="middle">Wi-Fi</text>
+      </g>
+      <g transform="translate(620 282)">
+        <rect width="124" height="48" rx="24" fill="#E8922E"/><text x="62" y="32" text-anchor="middle">Pay me</text>
+      </g>
+      <g transform="translate(758 282)">
+        <rect width="134" height="48" rx="24" fill="#E5566A"/><text x="67" y="32" text-anchor="middle">Location</text>
+      </g>
+      <g transform="translate(906 282)">
+        <rect width="88" height="48" rx="24" fill="#8E63D9"/><text x="44" y="32" text-anchor="middle">Link</text>
+      </g>
+      <g transform="translate(1008 282)">
+        <rect width="112" height="48" rx="24" fill="#2E9AAF"/><text x="56" y="32" text-anchor="middle">Any tag</text>
+      </g>
+    </g>
+  </g>
+</svg>

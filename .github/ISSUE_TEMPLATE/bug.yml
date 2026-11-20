@@ -1,0 +1,27 @@
+name: Bug
+description: Something in TapDrop or its setup does the wrong thing.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: devices
+    attributes:
+      label: Watch and phone
+      placeholder: Galaxy Watch8 Classic on Android 17, Galaxy S24 Ultra on Android 17
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Watch log
+      description: Output of `python skill/tapdrop-watch/scripts/watch.py log` right after the problem. Remove anything personal first.
+      render: text
+  - type: markdown
+    attributes:
+      value: For a security problem, please use "Report a vulnerability" on the Security tab instead of an issue.

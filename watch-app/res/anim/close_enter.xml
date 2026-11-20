@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The screen underneath coming back as the top one leaves. -->
+<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromAlpha="0.3" android:toAlpha="1" android:duration="200" />

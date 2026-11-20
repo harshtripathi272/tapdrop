@@ -1,0 +1,10 @@
+# Let git manage line endings for text, so Windows and Unix checkouts both work.
+* text=auto
+
+# The helper script must keep Unix line endings to run with a shebang on macOS and Linux.
+*.py text eol=lf
+
+# Never touch these.
+*.apk binary
+*.png binary
+*.keystore binary
