@@ -96,6 +96,18 @@ final class Store {
         else prefs(c).edit().putString(KEY_ACTIVE, id).commit();
     }
 
+    /** True only while the Learn screen is open. The tag accepts writes at no other time. */
+    private static final String KEY_LEARNING = "learning";
+
+    static boolean learning(Context c) {
+        return prefs(c).getBoolean(KEY_LEARNING, false);
+    }
+
+    static void setLearning(Context c, boolean on) {
+        // commit, not apply: the NFC service may read this from another thread right away.
+        prefs(c).edit().putBoolean(KEY_LEARNING, on).commit();
+    }
+
     /** Web page that hands a UPI request to the payer's app. Empty until one is hosted. */
     static String payPage(Context c) {
         return prefs(c).getString(KEY_PAY_PAGE, "");

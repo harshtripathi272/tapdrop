@@ -2,6 +2,7 @@ package dev.tapdrop.spike;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -47,7 +48,7 @@ public class EditActivity extends Activity {
         column.addView(Ui.title(this, "Add"));
         LinearLayout group = Ui.group(this);
         for (final String kind : Kinds.ALL) {
-            Ui.addRow(group, Ui.row(this, kind, Kinds.color(kind), Kinds.name(kind), Kinds.blurb(kind),
+            Ui.addRow(group, Ui.row(this, kind, Kinds.color(kind), Kinds.addName(kind), Kinds.blurb(kind),
                 () -> pick(kind), null));
         }
         column.addView(group);
@@ -61,6 +62,11 @@ public class EditActivity extends Activity {
     }
 
     private void pick(String kind) {
+        if (kind.equals(Kinds.CUSTOM)) {            // filled in by a phone, not by a form
+            Ui.go(this, new Intent(this, LearnActivity.class));
+            super.finish();
+            return;
+        }
         if (Kinds.fields(kind).length == 0) {       // nothing to fill in, such as a location
             Store.upsert(this, new Item(Store.newId(), kind, null));
             finish();

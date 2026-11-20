@@ -3,23 +3,32 @@ package dev.tapdrop.spike;
 import android.location.Location;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 
 import java.util.Arrays;
 
 /**
- * Emulates an NFC Forum Type 4 tag that holds one NDEF record.
- * A reader selects the NDEF application, reads the capability container (E103),
- * then reads the NDEF file (E104). Read-only: writes are refused.
+ * Emulates an NFC Forum Type 4 tag that holds one NDEF message.
  *
- * The record comes from the item whose share screen is open. With no share
- * screen open the tag does not answer, so nothing leaks from the home list.
+ * Sharing: a reader selects the NDEF application, reads the capability container
+ * (E103), then reads the NDEF file (E104). The message comes from the item whose
+ * share screen is open. With no share screen open the tag does not answer.
+ *
+ * Learning: while the Learn screen is open the tag presents itself as empty and
+ * writable. An NFC tag app writes a message with UPDATE BINARY, and the watch
+ * saves it as a new item. Writes are refused at every other time, so a stranger's
+ * phone cannot change what the watch holds.
  */
 public class NdefTagService extends HostApduService {
     static final String TAG = "TapDrop";
 
-    /** Count of completed reads. The share screen polls it to flash "Sent". */
+    /** Count of completed reads. The share screen polls it to show "Sent". */
     static volatile int reads = 0;
+
+    /** Count of messages learned, and the id of the newest. The Learn screen polls these. */
+    static volatile int learned = 0;
+    static volatile String lastLearnedId = null;
 
     /** Latest location fix, written by the share screen of a location item. */
     static volatile Location fix = null;
@@ -28,21 +37,24 @@ public class NdefTagService extends HostApduService {
     private static final byte[] OK = {(byte) 0x90, 0x00};
     private static final byte[] NOT_FOUND = {0x6A, (byte) 0x82};
     private static final byte[] WRONG_PARAMS = {0x6B, 0x00};
+    private static final byte[] WRONG_LENGTH = {0x67, 0x00};
+    private static final byte[] DENIED = {0x69, (byte) 0x82};
     private static final byte[] NOT_SUPPORTED = {0x6D, 0x00};
 
-    private static final int MAX_NDEF_FILE = 0x0400;
+    /** Size of the NDEF file: a 2-byte length followed by the message. */
+    private static final int MAX_FILE = 0x0800;
 
-    // Capability container: v2.0, MLe 0x3B, MLc 0x34, one NDEF file E104, read open, write denied.
-    private static final byte[] CC_FILE = {
-        0x00, 0x0F, 0x20, 0x00, 0x3B, 0x00, 0x34,
-        0x04, 0x06, (byte) 0xE1, 0x04,
-        (byte) (MAX_NDEF_FILE >> 8), (byte) MAX_NDEF_FILE,
-        0x00, (byte) 0xFF
-    };
+    private static final int NONE = 0;
+    private static final int CC = 1;
+    private static final int NDEF = 2;
 
-    private byte[] ndefFile = new byte[0];
-    private byte[] selected = null;
-    private boolean buzzed = false;
+    private final byte[] file = new byte[MAX_FILE];
+    private int fileLen = 0;            // valid bytes in the file, 0 when there is nothing to serve
+    private int selected = NONE;
+    private boolean learning = false;
+    private boolean counted = false;    // this read has been counted
+    private boolean saved = false;      // this write has been saved
+    private int written = 0;            // highest message byte written so far
 
     @Override
     public byte[] processCommandApdu(byte[] apdu, Bundle extras) {
@@ -59,62 +71,118 @@ public class NdefTagService extends HostApduService {
 
         if (ins == 0xA4) {                       // SELECT
             byte[] data = body(apdu);
-            if (p1 == 0x04) {                    // by application name
-                if (!Arrays.equals(data, NDEF_AID)) return NOT_FOUND;
-                selected = null;
-                buzzed = false;
-                Item item = Store.find(this, Store.active(this));
-                byte[] record = item == null ? null : Kinds.record(this, item, fix);
-                if (record == null) {
-                    Log.d(TAG, item == null ? "no share screen open, not answering" : "nothing to send yet for " + item.type);
-                    ndefFile = new byte[0];
-                    return NOT_FOUND;
-                }
-                if (record.length + 2 > MAX_NDEF_FILE) {
-                    Log.w(TAG, "record too large: " + record.length);
-                    ndefFile = new byte[0];
-                    return NOT_FOUND;
-                }
-                ndefFile = new byte[2 + record.length];
-                ndefFile[0] = (byte) (record.length >> 8);
-                ndefFile[1] = (byte) record.length;
-                System.arraycopy(record, 0, ndefFile, 2, record.length);
-                Log.d(TAG, "serving type=" + item.type + " bytes=" + ndefFile.length);
-                return OK;
-            }
-            if (ndefFile.length > 0 && data.length == 2 && (data[0] & 0xFF) == 0xE1) {   // by file id
-                if ((data[1] & 0xFF) == 0x03) { selected = CC_FILE; return OK; }
-                if ((data[1] & 0xFF) == 0x04) { selected = ndefFile; return OK; }
+            if (p1 == 0x04) return Arrays.equals(data, NDEF_AID) ? begin() : NOT_FOUND;
+            if (fileLen > 0 && data.length == 2 && (data[0] & 0xFF) == 0xE1) {   // by file id
+                if ((data[1] & 0xFF) == 0x03) { selected = CC; return OK; }
+                if ((data[1] & 0xFF) == 0x04) { selected = NDEF; return OK; }
             }
             return NOT_FOUND;
         }
 
         if (ins == 0xB0) {                       // READ BINARY
-            if (selected == null) return NOT_FOUND;
+            if (selected == NONE) return NOT_FOUND;
+            byte[] source = selected == CC ? capabilityContainer() : file;
+            int length = selected == CC ? source.length : fileLen;
             int offset = (p1 << 8) | p2;
             int le = apdu.length > 4 ? (apdu[4] & 0xFF) : 0;
             if (le == 0) le = 256;
-            if (offset > selected.length) return WRONG_PARAMS;
-            int n = Math.min(le, selected.length - offset);
+            if (offset > length) return WRONG_PARAMS;
+            int n = Math.min(le, length - offset);
             byte[] out = new byte[n + 2];
-            System.arraycopy(selected, offset, out, 0, n);
+            System.arraycopy(source, offset, out, 0, n);
             out[n] = (byte) 0x90;
             out[n + 1] = 0x00;
-            if (selected == ndefFile && offset + n >= ndefFile.length && !buzzed) {
-                buzzed = true;
+            if (!learning && selected == NDEF && offset + n >= fileLen && !counted) {
+                counted = true;
                 reads++;                         // the share screen sees this and buzzes the wrist
                 Log.d(TAG, "READ COMPLETE");
             }
             return out;
         }
 
-        return NOT_SUPPORTED;                    // includes UPDATE BINARY: tag is read-only
+        if (ins == 0xD6) {                       // UPDATE BINARY
+            if (!learning || selected != NDEF) return DENIED;
+            byte[] data = body(apdu);
+            int offset = (p1 << 8) | p2;
+            if (data.length == 0 || offset + data.length > MAX_FILE) return WRONG_LENGTH;
+            System.arraycopy(data, 0, file, offset, data.length);
+            if (offset + data.length > 2) written = Math.max(written, offset + data.length);
+            // A writer sets the length to 0, writes the message, then writes the real length last.
+            int messageLen = ((file[0] & 0xFF) << 8) | (file[1] & 0xFF);
+            fileLen = Math.min(MAX_FILE, 2 + messageLen);
+            if (offset == 0 && messageLen > 0 && written >= 2 + messageLen && !saved) {
+                saved = true;
+                learn(Arrays.copyOfRange(file, 2, 2 + messageLen));
+            }
+            return OK;
+        }
+
+        return NOT_SUPPORTED;
+    }
+
+    /** A reader selected the tag. Decide what this tap is: a write to learn from, or a read to answer. */
+    private byte[] begin() {
+        selected = NONE;
+        counted = false;
+        saved = false;
+        written = 0;
+        learning = Store.learning(this);
+
+        if (learning) {
+            Arrays.fill(file, (byte) 0);
+            fileLen = 2;                         // an empty tag: length 0 and no message
+            Log.d(TAG, "learning: presenting an empty writable tag");
+            return OK;
+        }
+
+        // Only the item on screen is served. Answering while idle was tried and does not work
+        // on this watch: off screen, Samsung Health's claim on the same tag ID wins a chooser.
+        Item item = Store.find(this, Store.active(this));
+        byte[] message = item == null ? null : Kinds.record(this, item, fix);
+        if (message == null || message.length + 2 > MAX_FILE) {
+            Log.d(TAG, item == null ? "no share screen open, not answering"
+                : message == null ? "nothing to send yet for " + item.type : "message too large: " + message.length);
+            fileLen = 0;
+            return NOT_FOUND;
+        }
+        file[0] = (byte) (message.length >> 8);
+        file[1] = (byte) message.length;
+        System.arraycopy(message, 0, file, 2, message.length);
+        fileLen = 2 + message.length;
+        Log.d(TAG, "serving type=" + item.type + " bytes=" + fileLen);
+        return OK;
+    }
+
+    /** Saves a written message as a new item, if it is a well-formed NDEF message. */
+    private void learn(byte[] message) {
+        String[] what = Ndef.describe(message);
+        if (what == null) {
+            Log.w(TAG, "learned bytes are not a valid NDEF message, ignored: " + message.length);
+            return;
+        }
+        Item item = new Item(Store.newId(), Kinds.CUSTOM, null);
+        item.put("ndef", Base64.encodeToString(message, Base64.NO_WRAP));
+        item.put("label", "");
+        Store.upsert(this, item);
+        lastLearnedId = item.id;
+        learned++;                               // the Learn screen sees this
+        Log.d(TAG, "LEARNED " + message.length + " bytes: " + what[0]);
+    }
+
+    /** Capability container: v2.0, 59-byte reads, 52-byte writes, one NDEF file E104. Writable only while learning. */
+    private byte[] capabilityContainer() {
+        return new byte[] {
+            0x00, 0x0F, 0x20, 0x00, 0x3B, 0x00, 0x34,
+            0x04, 0x06, (byte) 0xE1, 0x04,
+            (byte) (MAX_FILE >> 8), (byte) MAX_FILE,
+            0x00, (byte) (learning ? 0x00 : 0xFF)
+        };
     }
 
     @Override
     public void onDeactivated(int reason) {
         Log.d(TAG, "deactivated, reason=" + reason);
-        selected = null;
+        selected = NONE;
     }
 
     private static byte[] body(byte[] apdu) {

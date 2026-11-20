@@ -127,6 +127,15 @@ keyboard is slow, so offering to do it from here is the kind thing.
 `--id` keeps several items of one kind apart. Without it, setting a kind again
 replaces the earlier one. Use the user's exact values and do not invent any.
 
+There is a second way in, and it needs neither you nor a keyboard. On the
+watch, Add > **Learn from phone** makes the watch an empty, writable tag. The
+user opens any NFC tag-writing app on their phone (NFC Tools is a common one),
+builds a record, presses Write and holds the phone to the watch. TapDrop saves
+whatever arrives as a new item. Mention it for anything the five kinds don't
+cover, such as a phone number, plain text or an app link, and for secrets the
+user would rather not type into a chat. `watch.py log` shows `LEARNED` when a
+write lands.
+
 About the things you will be handed:
 
 - **Wi-Fi password.** It is stored unencrypted in the app's private storage on
@@ -185,7 +194,13 @@ To remove everything: `python scripts/watch.py uninstall`.
 ## Limits worth saying out loud
 
 - An item's share screen has to be open. Samsung Health claims the same NFC tag
-  ID, and Android only lets the app on screen take priority.
+  ID, and Android only lets the app on screen take priority. Users will ask
+  whether someone can just tap the watch while it is idle. They can't: this was
+  tested, and with TapDrop closed a tap opens Samsung's "Select an app to use"
+  screen. Suggest assigning a double press of the watch's Home key to TapDrop,
+  in the watch's own settings, so opening it takes one gesture.
+- Learn from phone copies the data on ordinary NFC stickers. It cannot copy
+  metro, access or bank cards.
 - iPhones act on links only. Location and plain links work. Contact, Wi-Fi and
   payment requests are untested on iPhone.
 - The first location fix can take a while indoors.

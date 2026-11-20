@@ -37,6 +37,7 @@
 
         <activity android:name=".ShareActivity" android:exported="false" />
         <activity android:name=".EditActivity" android:exported="false" />
+        <activity android:name=".LearnActivity" android:exported="false" />
 
         <!-- Answers NFC readers as an NFC Forum Type 4 tag holding one NDEF record. -->
         <service

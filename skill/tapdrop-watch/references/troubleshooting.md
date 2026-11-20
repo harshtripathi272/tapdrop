@@ -88,6 +88,21 @@ a reader at all.
 No share screen was open. From the home list the watch deliberately gives
 nothing to a reader.
 
+**The watch shows "Select an app to use" with Samsung Health and TapDrop tag.**
+The phone tapped while no TapDrop share screen was open. Two apps claim the
+same tag ID, and off screen neither has priority, so Samsung asks. This is why
+sharing from the watch face or with the display asleep does not work. Open an
+item first, then tap.
+
+**Learn from phone: the tag app says the tag is read-only or not writable.**
+The Learn screen was not open. The watch accepts writes only while it is
+showing. Open TapDrop > Add > Learn from phone, then write.
+
+**Learn from phone: the write seems to succeed but no item appears.**
+Check `watch.py log`. `LEARNED` means it was saved. "not a valid NDEF message"
+means the app wrote something TapDrop could not parse. Messages are limited to
+about 2 KB.
+
 **The share screen says "NFC priority refused".**
 Another app holds NFC priority. Close other apps on the watch and reopen the
 item.

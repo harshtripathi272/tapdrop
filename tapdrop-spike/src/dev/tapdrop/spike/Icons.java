@@ -92,6 +92,19 @@ final class Icons {
                 canvas.drawPath(PATH, STROKE);
                 break;
 
+            case Kinds.CUSTOM:      // a tag: label shape with a hole, and a wave leaving it
+                PATH.moveTo(4f, 8f);
+                PATH.lineTo(11.5f, 8f);
+                PATH.lineTo(16f, 12f);
+                PATH.lineTo(11.5f, 16f);
+                PATH.lineTo(4f, 16f);
+                PATH.close();
+                canvas.drawPath(PATH, STROKE);
+                canvas.drawCircle(7.5f, 12f, 1.1f, FILL);
+                OVAL.set(11.5f, 6.5f, 20.5f, 17.5f);
+                canvas.drawArc(OVAL, -50f, 100f, false, STROKE);
+                break;
+
             case CHECK:
                 PATH.moveTo(5.5f, 12.5f);
                 PATH.lineTo(10f, 17f);

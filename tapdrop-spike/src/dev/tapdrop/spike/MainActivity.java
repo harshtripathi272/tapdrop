@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
         if (items.isEmpty()) {
             column.addView(Ui.body(this, "Choose what to share from your wrist.", Ui.TEXT_SECONDARY));
             for (final String kind : Kinds.ALL) {
-                Ui.addRow(group, Ui.row(this, kind, Kinds.color(kind), Kinds.name(kind), Kinds.blurb(kind),
+                Ui.addRow(group, Ui.row(this, kind, Kinds.color(kind), Kinds.addName(kind), Kinds.blurb(kind),
                     () -> Ui.go(this, new Intent(this, EditActivity.class).putExtra(EditActivity.EXTRA_KIND, kind)),
                     null));
             }

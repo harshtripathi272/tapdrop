@@ -17,9 +17,11 @@ final class Kinds {
     static final String UPI = "upi";
     static final String LOCATION = "location";
     static final String LINK = "link";
+    /** A message written to the watch by an NFC tag app, kept and shared as it arrived. */
+    static final String CUSTOM = "custom";
 
     /** Order shown when adding. */
-    static final String[] ALL = {CONTACT, WIFI, UPI, LOCATION, LINK};
+    static final String[] ALL = {CONTACT, WIFI, UPI, LOCATION, LINK, CUSTOM};
 
     static final int AMOUNT_STEP = 10;
     static final int AMOUNT_MAX = 100000;
@@ -75,6 +77,10 @@ final class Kinds {
                     new Field("label", "Title", "Instagram", TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES, false),
                     new Field("url", "Link", "instagram.com/you", TEXT | InputType.TYPE_TEXT_VARIATION_URI, true),
                 };
+            case CUSTOM:
+                return new Field[] {       // the content came from the phone; only its name is editable
+                    new Field("label", "Title", "Name this tag", TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES, false),
+                };
             default:
                 return new Field[0];       // location has nothing to fill in
         }
@@ -109,8 +115,14 @@ final class Kinds {
             case WIFI: return "Wi-Fi";
             case UPI: return "Pay me";
             case LOCATION: return "Location";
+            case CUSTOM: return "Learned tag";
             default: return "Link";
         }
+    }
+
+    /** What the kind is called in the list of things to add. */
+    static String addName(String type) {
+        return type.equals(CUSTOM) ? "Learn from phone" : name(type);
     }
 
     /** A few words saying what the kind is for, shown when adding. Kept short: rows are narrow. */
@@ -120,7 +132,24 @@ final class Kinds {
             case WIFI: return "For guests";
             case UPI: return "UPI request";
             case LOCATION: return "Where you are";
+            case CUSTOM: return "Any NFC tag app";
             default: return "Any web link";
+        }
+    }
+
+    /** What a learned item holds, as {kind, title}. Never null. */
+    static String[] learned(Item item) {
+        byte[] message = learnedMessage(item);
+        String[] what = message == null ? null : Ndef.describe(message);
+        return what == null ? new String[] {"Tag", "Tag data"} : what;
+    }
+
+    private static byte[] learnedMessage(Item item) {
+        try {
+            byte[] message = android.util.Base64.decode(item.get("ndef"), android.util.Base64.NO_WRAP);
+            return message.length == 0 ? null : message;
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 
@@ -131,6 +160,7 @@ final class Kinds {
             case WIFI: return 0xFF2FA968;
             case UPI: return 0xFFE8922E;
             case LOCATION: return 0xFFE5566A;
+            case CUSTOM: return 0xFF2E9AAF;
             default: return 0xFF8E63D9;
         }
     }
@@ -145,6 +175,7 @@ final class Kinds {
                 return amount > 0 ? "₹" + amount : "Any amount";
             }
             case LOCATION: return "My location";
+            case CUSTOM: return item.get("label").isEmpty() ? learned(item)[1] : item.get("label");
             default: {
                 String label = item.get("label");
                 if (!label.isEmpty()) return label;
@@ -164,6 +195,7 @@ final class Kinds {
                 return usable(fix)
                     ? String.format(Locale.US, "%.5f, %.5f", fix.getLatitude(), fix.getLongitude())
                     : "Finding you…";
+            case CUSTOM: return learned(item)[0];
             default: return bare(link(item));
         }
     }
@@ -196,6 +228,8 @@ final class Kinds {
                 // A maps web link opens the Maps app on Android and works on iPhone too.
                 return Ndef.uri(String.format(Locale.US, "https://www.google.com/maps?q=%.6f,%.6f",
                     fix.getLatitude(), fix.getLongitude()));
+            case CUSTOM:
+                return learnedMessage(item);     // shared byte for byte as the phone wrote it
             default:
                 return Ndef.uri(link(item));
         }

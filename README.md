@@ -16,6 +16,7 @@ Galaxy S24 Ultra (Android 17). Not tested on an iPhone.
 | Payment request | Link to `web/pay.html` carrying a UPI request | UPI app chooser |
 | Link | URL | Opens |
 | Location | Google Maps link to the watch's current position | Not tested yet |
+| Learned tag | Whatever an NFC tag app wrote to the watch | Written by NFC Tools; read-back not tested |
 
 ## Using it
 
@@ -33,6 +34,20 @@ access to saved Wi-Fi passwords.
 The watch answers a phone only while a share screen is open, and only with
 that item.
 
+### Learn from phone
+
+Add > **Learn from phone** turns the watch into an empty, writable tag. Open
+any NFC tag-writing app on a phone, such as NFC Tools, build a record, press
+Write and hold the phone to the watch. TapDrop saves what it receives as a new
+item and shares it back unchanged. It names the item from its contents: a link's
+address, a contact's name, a Wi-Fi network's name.
+
+This is the quick way to load a Wi-Fi password or anything TapDrop has no form
+for. The watch accepts writes only while the Learn screen is open.
+
+It copies the data held on ordinary NFC stickers. It cannot copy metro, access
+or bank cards, which rely on encryption and a fixed chip ID.
+
 ## Setting it up with Claude
 
 `skill/tapdrop-watch/` is a Claude skill that walks through the whole setup on
@@ -43,7 +58,9 @@ SDK is needed. `build.ps1` refreshes that APK on every build.
 ## Limits
 
 - Samsung Health registers the same NFC tag ID, and only the foreground app
-  can claim priority. So the share screen has to be on screen.
+  can claim priority. So the share screen has to be on screen. With TapDrop
+  closed, a tap opens Samsung's "Select an app to use" screen. Sharing from
+  the watch face or with the display asleep was tested and does not work.
 - Items are typed on the watch keyboard, or set from a computer over adb.
   There is no phone companion app yet.
 - `web/pay.html` has to be reachable by the payer's phone. It is not hosted
@@ -59,7 +76,8 @@ SDK is needed. `build.ps1` refreshes that APK on every build.
   - `Ndef.java` builds the NDEF records.
   - `Item.java`, `Store.java` hold the user's items.
   - `MainActivity.java` is the list, `ShareActivity.java` and `CardView.java`
-    the share screen, `EditActivity.java` the add and edit forms.
+    the share screen, `EditActivity.java` the add and edit forms,
+    `LearnActivity.java` the Learn screen.
   - `Ui.java` holds colours, type and shared view pieces. `Icons.java` draws
     the icons in code, so there are no image files.
   - `build.ps1` builds and installs without Gradle.
