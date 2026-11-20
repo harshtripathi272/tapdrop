@@ -18,6 +18,8 @@
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <application
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@android:style/Theme.DeviceDefault">
 
@@ -38,6 +40,7 @@
         <activity android:name=".ShareActivity" android:exported="false" />
         <activity android:name=".EditActivity" android:exported="false" />
         <activity android:name=".LearnActivity" android:exported="false" />
+        <activity android:name=".OneTapActivity" android:exported="false" />
 
         <!-- Answers NFC readers as an NFC Forum Type 4 tag holding one NDEF record. -->
         <service

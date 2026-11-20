@@ -175,9 +175,13 @@ Pay me will not open their friends' UPI apps.
    watch against the upper back of an unlocked phone with NFC on.
 3. `python scripts/watch.py log`
 
-`READ COMPLETE` means the phone took the whole record. `not answering` means no
-item was open: the watch only answers while an item's share screen is showing.
-Then ask what the phone showed. You can see the watch's side, not the phone's.
+`READ COMPLETE` means the phone took the whole record. `not answering` means
+there was nothing to send: no items yet, or a location item with no fix. Then
+ask what the phone showed. You can see the watch's side, not the phone's.
+
+Also have them try it with TapDrop closed, since that is how it gets used in
+practice: tap, pick TapDrop tag on the watch, tap again. The log line
+`answering with the quick-tap item` confirms that path.
 
 ## Finishing up
 
@@ -193,12 +197,21 @@ To remove everything: `python scripts/watch.py uninstall`.
 
 ## Limits worth saying out loud
 
-- An item's share screen has to be open. Samsung Health claims the same NFC tag
-  ID, and Android only lets the app on screen take priority. Users will ask
-  whether someone can just tap the watch while it is idle. They can't: this was
-  tested, and with TapDrop closed a tap opens Samsung's "Select an app to use"
-  screen. Suggest assigning a double press of the watch's Home key to TapDrop,
-  in the watch's own settings, so opening it takes one gesture.
+- One-tap sharing needs an item's share screen open. Samsung Health claims the
+  same NFC tag ID, and Android only lets the app on screen take priority.
+- Users will ask whether someone can just tap the watch while it is idle. Yes,
+  in two taps. The first tap opens Samsung's "Select an app to use" screen. The
+  wearer picks **TapDrop tag** and the phone taps again. The watch then sends
+  the quick-tap item: the first in the list, or whichever item the user marked
+  with Edit > "Use for quick tap". Tell the user which item that is, since it
+  goes out without the app showing it first.
+- They will then ask for one tap. On a Samsung watch, TapDrop's home screen
+  ends with **One-tap sharing**. Turning it on switches off Samsung Health's
+  NFC tag service, so TapDrop is the only app left to answer. Explain the two
+  costs before they decide: Samsung Health's NFC feature for gym machines stops
+  working, and their quick-tap item goes to any phone that touches the awake
+  watch, with nobody asked. This is theirs to turn on, on the watch. Don't
+  switch it for them over adb. It can be turned off again on the same screen.
 - Learn from phone copies the data on ordinary NFC stickers. It cannot copy
   metro, access or bank cards.
 - iPhones act on links only. Location and plain links work. Contact, Wi-Fi and

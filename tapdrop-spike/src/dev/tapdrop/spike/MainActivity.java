@@ -57,31 +57,42 @@ public class MainActivity extends Activity {
         column = Ui.column(this);
         column.addView(Ui.title(this, "TapDrop"));
 
-        LinearLayout group = Ui.group(this);
+        // The user's own items first.
         List<Item> items = Store.load(this);
+        LinearLayout mine = Ui.group(this);
         if (items.isEmpty()) {
             column.addView(Ui.body(this, "Choose what to share from your wrist.", Ui.TEXT_SECONDARY));
-            for (final String kind : Kinds.ALL) {
-                Ui.addRow(group, Ui.row(this, kind, Kinds.color(kind), Kinds.addName(kind), Kinds.blurb(kind),
-                    () -> Ui.go(this, new Intent(this, EditActivity.class).putExtra(EditActivity.EXTRA_KIND, kind)),
-                    null));
-            }
-            column.addView(group);
         } else {
+            String quick = Store.quick(this);
             for (Item item : items) {
                 final String id = item.id;
-                Ui.addRow(group, Ui.row(this, item.type, Kinds.color(item.type), Kinds.title(item), Kinds.rowSubtitle(item),
+                // With several items, mark the one a tap gets while TapDrop is closed.
+                String detail = items.size() > 1 && id.equals(quick)
+                    ? "Quick tap · " + Kinds.rowSubtitle(item) : Kinds.rowSubtitle(item);
+                Ui.addRow(mine, Ui.row(this, item.type, Kinds.color(item.type), Kinds.title(item), detail,
                     () -> Ui.go(this, new Intent(this, ShareActivity.class).putExtra(ShareActivity.EXTRA_ID, id)),
                     () -> Ui.go(this, new Intent(this, EditActivity.class).putExtra(EditActivity.EXTRA_ID, id))));
             }
-            column.addView(group);
-            column.addView(Ui.card(this, Icons.ADD, Ui.NEUTRAL, "Add",
-                () -> Ui.go(this, new Intent(this, EditActivity.class))));
+            column.addView(mine);
+            column.addView(Ui.section(this, "Add another"));
         }
+
+        // Every kind that can be added is always on this screen. Behind an "Add" button
+        // they looked as if they had been removed.
+        LinearLayout kinds = Ui.group(this);
+        for (final String kind : Kinds.ALL) {
+            Ui.addRow(kinds, Ui.row(this, kind, Kinds.color(kind), Kinds.addName(kind), Kinds.blurb(kind),
+                () -> Ui.go(this, new Intent(this, EditActivity.class).putExtra(EditActivity.EXTRA_KIND, kind)),
+                null));
+        }
+        column.addView(kinds);
+
+        column.addView(Ui.card(this, Icons.CHECK, Ui.NEUTRAL, "One-tap sharing",
+            () -> Ui.go(this, new Intent(this, OneTapActivity.class))));
 
         if (firstBuild) {
             firstBuild = false;
-            Ui.stagger(group);      // rows arrive one after another, once per launch
+            Ui.stagger(items.isEmpty() ? kinds : mine);     // rows arrive one after another, once per launch
         }
         final ScrollView scroll = (ScrollView) column.getParent();
         scroll.post(() -> scroll.scrollTo(0, scrollY));

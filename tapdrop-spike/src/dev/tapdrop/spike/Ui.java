@@ -126,6 +126,17 @@ final class Ui {
         return t;
     }
 
+    /** A small heading above a group of rows, like "Paired devices" in Samsung's settings. */
+    static TextView section(Context c, String value) {
+        TextView t = new TextView(c);
+        t.setText(value);
+        t.setTextColor(TEXT_SECONDARY);
+        t.setTextSize(13);
+        t.setTypeface(BOLD);
+        t.setPadding(dp(c, 18), dp(c, 8), dp(c, 18), dp(c, 7));
+        return t;
+    }
+
     /** A short explanation in the quieter text colour, left-aligned like One UI's. */
     static TextView body(Context c, String value, int color) {
         TextView t = new TextView(c);

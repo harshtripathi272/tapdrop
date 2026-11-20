@@ -16,23 +16,45 @@ Galaxy S24 Ultra (Android 17). Not tested on an iPhone.
 | Payment request | Link to `web/pay.html` carrying a UPI request | UPI app chooser |
 | Link | URL | Opens |
 | Location | Google Maps link to the watch's current position | Not tested yet |
-| Learned tag | Whatever an NFC tag app wrote to the watch | Written by NFC Tools; read-back not tested |
+| Learned tag | Whatever an NFC tag app wrote to the watch | Written by NFC Tools, then read back in full |
 
 ## Using it
 
 A fresh install has no items. The home screen lists what you can add: contact,
-Wi-Fi, pay me, location, link. Add one and it becomes a row in your list.
+Wi-Fi, pay me, location, link, and learn from phone. Add one and it becomes a
+row at the top. The list of things to add stays underneath.
 
 Tap a row to open its share screen, then hold the watch to a phone. Tap **Edit**
-on that screen to change or delete the item. The last row of the list adds
-another. On a payment request, the bezel sets the amount in steps of 10 rupees.
+on that screen to change or delete the item. On a payment request, the bezel
+sets the amount in steps of 10 rupees.
 
 In the Wi-Fi form, "Use current Wi-Fi" fills in the network the watch is
 connected to. The password is always typed once, because Android gives no app
 access to saved Wi-Fi passwords.
 
-The watch answers a phone only while a share screen is open, and only with
-that item.
+### Quick tap, with TapDrop closed
+
+You don't have to open the app. If a phone taps the watch while TapDrop is
+closed, the watch shows Samsung's "Select an app to use" screen. Pick
+**TapDrop tag**, then tap the phone again. The watch sends your quick-tap item
+and buzzes twice.
+
+The quick-tap item is the first in your list until you choose another: open an
+item, tap Edit, then "Use for quick tap". Nothing is sent unless you pick
+TapDrop on your own wrist, so a passing phone gets nothing.
+
+### One-tap sharing
+
+The two taps come from Samsung Health, which answers the same NFC tag ID. At
+the bottom of the home screen, **One-tap sharing > Turn on** switches off
+Samsung Health's NFC tag service, using an Android setting meant for this kind
+of clash. TapDrop then answers a tap from the watch face straight away. Turn
+it off on the same screen to give the service back.
+
+Two things change when it is on. Samsung Health's NFC tag feature, which some
+gym machines use, stops working. And nobody is asked before your quick-tap item
+is sent, so any phone that touches your awake watch gets it. Keep that item to
+something you would hand to a stranger. The watch still has to be awake.
 
 ### Learn from phone
 
@@ -57,10 +79,11 @@ SDK is needed. `build.ps1` refreshes that APK on every build.
 
 ## Limits
 
-- Samsung Health registers the same NFC tag ID, and only the foreground app
-  can claim priority. So the share screen has to be on screen. With TapDrop
-  closed, a tap opens Samsung's "Select an app to use" screen. Sharing from
-  the watch face or with the display asleep was tested and does not work.
+- Samsung Health registers the same NFC tag ID. Out of the box, one tap works
+  only with an item's share screen open, and with TapDrop closed it takes two.
+  One-tap sharing removes that at the cost of Samsung Health's tag feature.
+- One-tap sharing knows about Samsung Health on Wear OS only. A watch from
+  another maker may have a different clashing app.
 - Items are typed on the watch keyboard, or set from a computer over adb.
   There is no phone companion app yet.
 - `web/pay.html` has to be reachable by the payer's phone. It is not hosted
@@ -77,7 +100,8 @@ SDK is needed. `build.ps1` refreshes that APK on every build.
   - `Item.java`, `Store.java` hold the user's items.
   - `MainActivity.java` is the list, `ShareActivity.java` and `CardView.java`
     the share screen, `EditActivity.java` the add and edit forms,
-    `LearnActivity.java` the Learn screen.
+    `LearnActivity.java` the Learn screen, `OneTapActivity.java` the one-tap
+    setting.
   - `Ui.java` holds colours, type and shared view pieces. `Icons.java` draws
     the icons in code, so there are no image files.
   - `build.ps1` builds and installs without Gradle.

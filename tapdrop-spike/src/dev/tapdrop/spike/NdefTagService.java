@@ -3,6 +3,8 @@ package dev.tapdrop.spike;
 import android.location.Location;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Base64;
 import android.util.Log;
 
@@ -13,7 +15,8 @@ import java.util.Arrays;
  *
  * Sharing: a reader selects the NDEF application, reads the capability container
  * (E103), then reads the NDEF file (E104). The message comes from the item whose
- * share screen is open. With no share screen open the tag does not answer.
+ * share screen is open. With TapDrop closed, the watch first makes the wearer
+ * choose TapDrop on a system screen; the next tap then gets the quick-tap item.
  *
  * Learning: while the Learn screen is open the tag presents itself as empty and
  * writable. An NFC tag app writes a message with UPDATE BINARY, and the watch
@@ -52,6 +55,7 @@ public class NdefTagService extends HostApduService {
     private int fileLen = 0;            // valid bytes in the file, 0 when there is nothing to serve
     private int selected = NONE;
     private boolean learning = false;
+    private boolean idle = false;       // answering with no share screen open
     private boolean counted = false;    // this read has been counted
     private boolean saved = false;      // this write has been saved
     private int written = 0;            // highest message byte written so far
@@ -96,6 +100,10 @@ public class NdefTagService extends HostApduService {
                 counted = true;
                 reads++;                         // the share screen sees this and buzzes the wrist
                 Log.d(TAG, "READ COMPLETE");
+                if (idle) {                      // no share screen to do it, so confirm from here
+                    Vibrator v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+                    if (v != null) v.vibrate(VibrationEffect.createWaveform(new long[] {0, 35, 70, 55}, -1));
+                }
             }
             return out;
         }
@@ -126,6 +134,7 @@ public class NdefTagService extends HostApduService {
         counted = false;
         saved = false;
         written = 0;
+        idle = false;
         learning = Store.learning(this);
 
         if (learning) {
@@ -135,12 +144,17 @@ public class NdefTagService extends HostApduService {
             return OK;
         }
 
-        // Only the item on screen is served. Answering while idle was tried and does not work
-        // on this watch: off screen, Samsung Health's claim on the same tag ID wins a chooser.
-        Item item = Store.find(this, Store.active(this));
+        // Normally the item on screen. With TapDrop closed this point is reached only after the
+        // wearer picked TapDrop on Samsung's "Select an app to use" screen and the phone tapped
+        // again, so the quick-tap item goes out.
+        String id = Store.active(this);
+        idle = id == null;
+        if (idle) id = Store.quick(this);
+        Item item = Store.find(this, id);
+        if (item != null && idle) Log.d(TAG, "no share screen open, answering with the quick-tap item");
         byte[] message = item == null ? null : Kinds.record(this, item, fix);
         if (message == null || message.length + 2 > MAX_FILE) {
-            Log.d(TAG, item == null ? "no share screen open, not answering"
+            Log.d(TAG, item == null ? "nothing to share yet, not answering"
                 : message == null ? "nothing to send yet for " + item.type : "message too large: " + message.length);
             fileLen = 0;
             return NOT_FOUND;

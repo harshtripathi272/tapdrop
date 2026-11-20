@@ -105,6 +105,16 @@ public class EditActivity extends Activity {
             say("Nothing to set. It shares where the watch is when you tap.", false);
         }
         if (existing != null) {
+            // The quick-tap item is what goes out when someone taps while TapDrop is closed.
+            if (existing.id.equals(Store.quick(this))) {
+                column.addView(Ui.body(this,
+                    "Quick tap: this is shared when someone taps while TapDrop is closed.", Ui.TEXT_SECONDARY));
+            } else {
+                column.addView(Ui.secondaryButton(this, "Use for quick tap", Ui.ACCENT, () -> {
+                    Store.setQuick(this, existing.id);
+                    finish();
+                }));
+            }
             column.addView(Ui.textButton(this, "Delete", Ui.DANGER, () -> {
                 Store.delete(this, existing.id);
                 finish();

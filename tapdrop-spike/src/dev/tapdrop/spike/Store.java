@@ -96,6 +96,27 @@ final class Store {
         else prefs(c).edit().putString(KEY_ACTIVE, id).commit();
     }
 
+    /**
+     * The item shared when a phone taps while TapDrop is closed.
+     *
+     * Off screen, a tap makes the watch ask the wearer to choose between Samsung Health
+     * and TapDrop, then tap again. That second tap reaches the tag with no share screen
+     * open, and this is what it gets. The wearer's choice on that screen is the consent.
+     * Defaults to the first item in the list until the user picks one.
+     */
+    private static final String KEY_QUICK = "quick";
+
+    static String quick(Context c) {
+        List<Item> items = load(c);
+        String chosen = prefs(c).getString(KEY_QUICK, null);
+        for (Item item : items) if (item.id.equals(chosen)) return chosen;
+        return items.isEmpty() ? null : items.get(0).id;
+    }
+
+    static void setQuick(Context c, String id) {
+        prefs(c).edit().putString(KEY_QUICK, id).commit();
+    }
+
     /** True only while the Learn screen is open. The tag accepts writes at no other time. */
     private static final String KEY_LEARNING = "learning";
 

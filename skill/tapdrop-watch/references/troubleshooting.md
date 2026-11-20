@@ -85,14 +85,28 @@ most phones) against the watch face. `watch.py log` shows whether the watch saw
 a reader at all.
 
 **The log says `not answering`.**
-No share screen was open. From the home list the watch deliberately gives
-nothing to a reader.
+There was nothing to send: the list is empty, or the item is a location that
+has no fix yet.
 
 **The watch shows "Select an app to use" with Samsung Health and TapDrop tag.**
-The phone tapped while no TapDrop share screen was open. Two apps claim the
-same tag ID, and off screen neither has priority, so Samsung asks. This is why
-sharing from the watch face or with the display asleep does not work. Open an
-item first, then tap.
+Expected when the phone taps while TapDrop is closed. Two apps claim the same
+tag ID, and off screen neither has priority, so Samsung asks. Pick TapDrop tag,
+then tap the phone again. The watch sends the quick-tap item. To skip this
+screen, open an item first and tap once, or turn on One-tap sharing at the
+bottom of TapDrop's home screen.
+
+**One-tap sharing says the watch refused, or has no setting for it.**
+It relies on an Android call, `setServiceEnabledForCategoryOther`, that newer
+versions provide and makers may restrict. It worked on a Galaxy Watch8 Classic
+on Android 17. Where it fails, the two-tap chooser path still works. To check
+the result, look for Samsung Health in `adb shell dumpsys nfc`: its line should
+read `Category: other(enabled: false)`.
+
+**After picking TapDrop and tapping again, nothing happens.**
+There is no quick-tap item to send. Either the list is empty, or the quick-tap
+item is a location with no fix yet. `watch.py log` shows `nothing to share yet`
+or `nothing to send yet for location`. An older build of the app stayed silent
+whenever it was closed; reinstall the current one.
 
 **Learn from phone: the tag app says the tag is read-only or not writable.**
 The Learn screen was not open. The watch accepts writes only while it is
