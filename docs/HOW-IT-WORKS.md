@@ -54,6 +54,10 @@ The part of a link after `#` is never sent to a server. The page stores
 nothing and receives nothing. It checks the UPI ID and amount, and tells the
 payer it is only a request.
 
+The `web/` folder is published by GitHub Pages through
+`.github/workflows/pages.yml`, and the app points at that copy by default. A
+watch can be pointed at any other copy with `watch.py pay-page`.
+
 ## Samsung Health claims the same tag ID
 
 The tag ID above is fixed by the standard. It is the one every phone looks for,

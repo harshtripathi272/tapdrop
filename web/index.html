@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapDrop</title>
+<meta name="description" content="Turn a Galaxy Watch into a programmable NFC tag. Tap your wrist on any phone to share a contact, Wi-Fi, a UPI request, your location or a link.">
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #16181d; --muted: #666b75;
+    --line: #e3e1dc; --accent: #4d7cfe; --accent-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b0c0f; --card: #17181b; --ink: #f1f1ee; --muted: #9a9fa8; --line: #2b2e35; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; align-items: center; justify-content: center; padding: 32px 16px;
+  }
+  main { width: 100%; max-width: 440px; text-align: center; }
+  .mark { width: 96px; height: 96px; border-radius: 26px; background: var(--accent); margin: 0 auto 22px; }
+  h1 { font-size: 40px; line-height: 1.1; margin: 0 0 10px; letter-spacing: -0.01em; }
+  p { margin: 0 0 12px; color: var(--muted); }
+  p.lead { color: var(--ink); font-size: 19px; }
+  a.button {
+    display: inline-block; margin-top: 14px; padding: 13px 22px; border-radius: 14px;
+    background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none;
+  }
+  .note { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <svg class="mark" viewBox="0 0 108 108" role="img" aria-label="TapDrop logo">
+    <path d="M54 26 C54 26 41 42 41 52 A13 13 0 0 0 67 52 C67 42 54 26 54 26 Z" fill="#fff"/>
+    <path d="M38 72 Q54 80 70 72" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M31 79 Q54 91 77 79" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="4.5" stroke-linecap="round"/>
+  </svg>
+  <h1>TapDrop</h1>
+  <p class="lead">Turn a Galaxy Watch into an NFC tag you can program.</p>
+  <p>Pick something on your wrist, tap any phone, and that phone gets it: a contact, Wi-Fi,
+     a payment request, your location or a link. The other phone needs no app.</p>
+  <a class="button" href="https://github.com/harshtripathi272/tapdrop">Get it on GitHub</a>
+  <p class="note">This site also hosts the page a "Pay me" tap opens. It reads the request from
+     the link itself and stores nothing.</p>
+</main>
+</body>
+</html>
