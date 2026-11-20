@@ -158,16 +158,18 @@ python skill/tapdrop-watch/scripts/watch.py log
 `READ COMPLETE` in the log means the phone took the whole item. When something fails, the fixes
 are in [troubleshooting](skill/tapdrop-watch/references/troubleshooting.md).
 
-**Pay me needs one more step.** A phone will not hand a UPI link from a tag to GPay, PhonePe or
-Paytm, so TapDrop sends a link to a small page that forwards to them. Put
-[`web/pay.html`](web/pay.html) on any static web host and tell the watch where it is:
+**How Pay me reaches a UPI app.** A phone will not hand a UPI link from a tag to GPay, PhonePe or
+Paytm, so TapDrop sends a link to a small page that forwards to them. That page is
+[`web/pay.html`](web/pay.html), published from this repo at
+<https://harshtripathi272.github.io/tapdrop/pay.html>, and the app uses it by default.
+
+The page stores nothing. The request travels after the `#` in the link, which browsers never send
+to a server. If you would rather not depend on this project's copy, put the file on any static web
+host and point your watch at it:
 
 ```sh
 python skill/tapdrop-watch/scripts/watch.py pay-page https://your-host.example/pay.html
 ```
-
-The page stores nothing. The request travels after the `#` in the link, which browsers never send
-to a server.
 
 When you are finished, turn **Wireless debugging** off on the watch. TapDrop does not need it.
 

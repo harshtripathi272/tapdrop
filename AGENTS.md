@@ -52,7 +52,7 @@ These exist because the work touches someone's own watch and phone.
 | `skill/tapdrop-watch/` | The setup procedure, `watch.py`, troubleshooting, and the bundled APK and pay page |
 | `watch-app/` | The app's source. Plain Java, Android framework classes only, no Gradle |
 | `watch-app/build.ps1` | Builds the APK on Windows and refreshes the copy in `skill/` |
-| `web/pay.html` | Static page that hands a UPI request to the payer's app |
+| `web/` | The project's GitHub Pages site. `pay.html` hands a UPI request to the payer's app, and the app links to the published copy by default. A push to `main` that touches `web/` republishes it |
 | `tools/` | PowerShell helpers for pairing and reconnecting on Windows |
 | `docs/` | How it works, and the images the README uses |
 

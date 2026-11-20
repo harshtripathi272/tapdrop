@@ -110,8 +110,15 @@ final class Store {
         prefs(c).edit().putString(KEY_QUICK, id).commit();
     }
 
-    /** Web page that hands a UPI request to the payer's app. Empty until one is hosted. */
+    /**
+     * The project's own copy of web/pay.html, published by GitHub Pages from this repo.
+     * Used unless the wearer points the watch at a page they host themselves.
+     */
+    static final String DEFAULT_PAY_PAGE = "https://harshtripathi272.github.io/tapdrop/pay.html";
+
+    /** Web page that hands a UPI request to the payer's app. */
     static String payPage(Context c) {
-        return prefs(c).getString(KEY_PAY_PAGE, "");
+        String page = prefs(c).getString(KEY_PAY_PAGE, "");
+        return page.isEmpty() ? DEFAULT_PAY_PAGE : page;
     }
 }

@@ -139,8 +139,14 @@ item.
 
 **A payment request shows a list of bank or shopping apps.**
 That is the bare `upi://` link problem. No UPI app accepts that link from a tag,
-so Android falls back to apps that react to any tag. Set a pay page (SKILL.md,
-step 7).
+so Android falls back to apps that react to any tag. Current builds send a link
+to a pay page instead, so this points to an old build: reinstall with
+`watch.py install`.
+
+**A Pay me tap opens a page that fails to load.**
+The payer's phone has no internet connection, or the watch points at a pay page
+that is no longer there. Reset the watch to the project's page with
+`watch.py pay-page https://harshtripathi272.github.io/tapdrop/pay.html`.
 
 **A location item never becomes ready.**
 It needs location permission, granted on the watch the first time the item is

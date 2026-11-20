@@ -148,25 +148,26 @@ About the things you will be handed:
   Wi-Fi" button that fills in the connected network. Android gives no app the
   saved password, so that part is always typed once.
 
-## Step 7: payment requests need a web page
+## Step 7: how payment requests reach a UPI app
 
-Skip this unless the user set a UPI item.
+Nothing to do here for most users. Read it so you can explain Pay me.
 
 A tag cannot hand a `upi://` link to GPay, PhonePe or Paytm. Phones dispatch
 tags with an NFC action those apps do not listen for, so the payer gets a list
 of unrelated apps. TapDrop works around it: the tag carries a web link to a
 small static page, and the page forwards to the phone's normal UPI app chooser.
 
-That page is `assets/pay.html`. It has to be on a public HTTPS address the
-payer's phone can reach. Any static host works. It stores nothing: the request
-travels after the `#` in the link, which browsers never send to a server. Once
-it is hosted:
+The app uses the project's own copy of that page by default,
+`https://harshtripathi272.github.io/tapdrop/pay.html`. It stores nothing: the
+request travels after the `#` in the link, which browsers never send to a
+server. The payer's phone needs an internet connection to load it.
+
+A user who would rather not depend on that copy can host `assets/pay.html`
+anywhere static and point their watch at it:
 
     python scripts/watch.py pay-page https://their-host.example/pay.html
 
-Hosting means publishing a page under the user's account, so it is their
-decision. Offer it, don't do it unasked. Until then, tell them plainly that
-Pay me will not open their friends' UPI apps.
+Hosting publishes a page under the user's account, so only do it if they ask.
 
 ## Step 8: test a tap
 
