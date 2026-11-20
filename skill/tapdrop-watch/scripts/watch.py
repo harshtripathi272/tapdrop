@@ -22,7 +22,7 @@ import sys
 import time
 from pathlib import Path
 
-PACKAGE = "dev.tapdrop.spike"
+PACKAGE = "dev.tapdrop"
 MAIN = PACKAGE + "/.MainActivity"
 KINDS = ("contact", "wifi", "upi", "link", "location")
 FIELDS = {

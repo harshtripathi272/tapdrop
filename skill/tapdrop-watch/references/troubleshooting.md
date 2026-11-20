@@ -62,7 +62,7 @@ go to whatever is on screen. Before sending any `input` command, wake the watch
 
 **`am start` brings back an old screen instead of the list.**
 Starting the main activity brings the existing task forward with whatever was
-on top. For a clean start: `am force-stop dev.tapdrop.spike`, then start it.
+on top. For a clean start: `am force-stop dev.tapdrop`, then start it.
 
 **`uiautomator dump` returns the previous screen's contents.**
 When the dump fails it leaves the old file in place, and reading it makes it
@@ -92,8 +92,14 @@ has no fix yet.
 Expected when the phone taps while TapDrop is closed. Two apps claim the same
 tag ID, and off screen neither has priority, so Samsung asks. Pick TapDrop tag,
 then tap the phone again. The watch sends the quick-tap item. To skip this
-screen, open an item first and tap once, or turn on One-tap sharing at the
-bottom of TapDrop's home screen.
+screen, open an item first and tap once, or turn on one-tap sharing on the
+Quick tap screen, the last row of TapDrop's home list.
+
+**The phone says "New tag collected" and "Empty tag".**
+The watch answered as a blank tag. That is what Learn mode presents, so the
+Learn screen is open, or an old build is stuck believing it is. Close the Learn
+screen. If it persists, force-stop TapDrop (`adb shell am force-stop
+dev.tapdrop`) and reinstall the current app, which no longer saves that state.
 
 **One-tap sharing says the watch refused, or has no setting for it.**
 It relies on an Android call, `setServiceEnabledForCategoryOther`, that newer
