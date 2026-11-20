@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 PACKAGE = "dev.tapdrop"
@@ -106,6 +107,30 @@ def watch():
     sys.exit("No watch is connected over adb. Run `watch.py connect`, or see references/troubleshooting.md.")
 
 
+def deliver(serial, extras, expect):
+    """Sends settings to the app and waits for the app to say it took them.
+
+    Two things can silently lose a plain `am start`: the watch being asleep, and
+    another TapDrop screen being on top, in which case Android brings the app
+    forward and drops the new request. --activity-clear-top closes whatever is
+    above the home list so the request is delivered. The app then logs the token
+    sent here, and only that counts as success.
+    """
+    token = uuid.uuid4().hex[:8]
+    shell(serial, "input keyevent KEYCODE_WAKEUP")
+    out, code = shell(serial, f"am start --activity-clear-top -n {MAIN} --es token {token} {extras}")
+    if code != 0 or "Error" in out:
+        sys.exit(out)
+    deadline = time.time() + 8
+    while time.time() < deadline:
+        log, _ = adb("-s", serial, "logcat", "-d", "-s", "TapDrop:D")
+        if f"{expect} #{token}" in log:
+            return
+        time.sleep(0.5)
+    sys.exit("The watch did not confirm it, so nothing was saved. Check that the watch is awake and "
+             "unlocked and that TapDrop is installed and up to date, then try again.")
+
+
 def foreground(serial):
     out, _ = shell(serial, "dumpsys activity activities | grep topResumedActivity")
     return PACKAGE + "/" in out
@@ -187,26 +212,21 @@ def cmd_set(args):
             sys.exit(f"{args.kind} has no field '{key}'. Fields: {', '.join(FIELDS[args.kind]) or 'none'}")
         values[key] = value
     serial = watch()
-    command = f"am start -n {MAIN} --es type {args.kind}"
+    extras = f"--es type {args.kind}"
     if args.id:
-        command += " --es id " + shlex.quote(args.id)
+        extras += " --es id " + shlex.quote(args.id)
     if not args.open:
-        command += " --ez quiet true"
+        extras += " --ez quiet true"
     for key, value in values.items():
-        command += f" --es {key} {shlex.quote(value)}"
-    shell(serial, "input keyevent KEYCODE_WAKEUP")
-    out, code = shell(serial, command)
-    if code != 0 or "Error" in out:
-        sys.exit(out)
+        extras += f" --es {key} {shlex.quote(value)}"
+    deliver(serial, extras, f"item set from adb: {args.kind}")
     shown = ", ".join(f"{k}={'(hidden)' if k in SECRET else v}" for k, v in values.items())
     print(f"Set {args.kind}" + (f" [{args.id}]" if args.id else "") + (": " + shown if shown else ""))
 
 
 def cmd_pay_page(args):
-    serial = watch()
-    shell(serial, "input keyevent KEYCODE_WAKEUP")
-    out, _ = shell(serial, f"am start -n {MAIN} --es pay_page {shlex.quote(args.url)}")
-    print("Pay page set." if "Error" not in out else out)
+    deliver(watch(), "--es pay_page " + shlex.quote(args.url), "pay page set")
+    print("Pay page set.")
 
 
 def cmd_open(_):

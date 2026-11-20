@@ -72,6 +72,16 @@ look as if nothing changed. Delete the file before each dump.
 `adb shell input rotaryencoder scroll --axis SCROLL,-1` is one click clockwise.
 Positive is anticlockwise.
 
+**`watch.py set` says the watch did not confirm it.**
+Nothing was saved. The script waits for the app to log a token it sent, and it
+did not appear. Usual causes: the watch is locked or showing something that
+blocks app launches, or an old TapDrop build is installed that does not log the
+token. Wake the watch, reinstall with `watch.py install`, and run it again.
+
+A plain `am start` with extras is not reliable here. If another TapDrop screen
+is on top, Android brings the app forward and drops the request without an
+error. The script passes `--activity-clear-top` to get it delivered.
+
 **The share and edit screens cannot be started from adb.**
 Only the main activity is exported. Seed items with `watch.py set`, or open
 them by tapping in the list.

@@ -111,8 +111,16 @@ public class MainActivity extends Activity {
     /** Creates or replaces one item from intent extras and opens its share screen. */
     private void takeFields(Intent intent) {
         if (intent == null) return;
+        // The sender waits for its token to appear in the log before it reports success.
+        String token = intent.getStringExtra("token");
+        String mark = token == null ? "" : " #" + token;
+
         String page = intent.getStringExtra(Store.KEY_PAY_PAGE);
-        if (page != null) Store.prefs(this).edit().putString(Store.KEY_PAY_PAGE, page.trim()).apply();
+        if (page != null) {
+            Store.prefs(this).edit().putString(Store.KEY_PAY_PAGE, page.trim()).apply();
+            intent.removeExtra(Store.KEY_PAY_PAGE);
+            Log.d(NdefTagService.TAG, "pay page set" + mark);
+        }
 
         String type = intent.getStringExtra("type");
         if (type == null) return;
@@ -129,7 +137,7 @@ public class MainActivity extends Activity {
             if (value != null) Kinds.set(item, field, value);
         }
         Store.upsert(this, item);
-        Log.d(NdefTagService.TAG, "item set from adb: " + type);
+        Log.d(NdefTagService.TAG, "item set from adb: " + type + mark);
         if (!intent.getBooleanExtra("quiet", false)) {
             Ui.go(this, new Intent(this, ShareActivity.class).putExtra(ShareActivity.EXTRA_ID, item.id));
         }
