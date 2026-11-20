@@ -4,36 +4,32 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.View;
 
 /**
- * One slot drawn full screen on the round display. Four arc segments around the edge
- * mirror the bezel position: the lit segment is the selected slot.
+ * The share screen for one item, drawn full screen on the round display.
+ * A ring in the item's colour sits at the edge and lights up when a phone has read it.
  */
 public class CardView extends View {
-    int index = 0;
+    String label = "";
+    int color = Color.WHITE;
     String title = "";
     String subtitle = "";
     String footer = "";
     boolean sent = false;       // briefly true after a phone finishes reading
-    boolean warning = false;    // footer is an error such as "NFC is off"
+    boolean warning = false;    // footer is a problem such as "NFC is off"
 
     private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint text = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    private final RectF oval = new RectF();
     private final Typeface bold = Typeface.create(Typeface.DEFAULT, Typeface.BOLD);
 
     public CardView(Context context) {
         super(context);
         ring.setStyle(Paint.Style.STROKE);
-        ring.setStrokeCap(Paint.Cap.ROUND);
         text.setTextAlign(Paint.Align.CENTER);
-        setFocusable(true);
-        setFocusableInTouchMode(true);
     }
 
     @Override
@@ -43,23 +39,13 @@ public class CardView extends View {
         float cx = w / 2f;
         float cy = h / 2f;
         float s = w / 438f;                      // designed against the 438 px Watch8 Classic
-        int color = Slots.COLORS[index];
 
         canvas.drawColor(Color.BLACK);
 
-        // Edge segments, slot 0 centred at 12 o'clock.
-        float inset = 13 * s;
-        oval.set(inset, inset, w - inset, h - inset);
-        ring.setStrokeWidth(9 * s);
-        int n = Slots.TYPES.length;
-        float span = 360f / n;
-        float gap = 14f;
-        for (int i = 0; i < n; i++) {
-            boolean lit = sent || i == index;
-            ring.setColor(lit ? color : Slots.COLORS[i]);
-            ring.setAlpha(lit ? 255 : 55);
-            canvas.drawArc(oval, -90f + i * span - (span - gap) / 2f, span - gap, false, ring);
-        }
+        ring.setStrokeWidth((sent ? 14 : 8) * s);
+        ring.setColor(color);
+        ring.setAlpha(sent ? 255 : 110);
+        canvas.drawCircle(cx, cy, w / 2f - 13 * s, ring);
 
         float maxWidth = w * 0.72f;
 
@@ -67,7 +53,7 @@ public class CardView extends View {
         text.setLetterSpacing(0.16f);
         text.setTextSize(21 * s);
         text.setColor(color);
-        canvas.drawText(Slots.LABELS[index], cx, cy - 82 * s, text);
+        canvas.drawText(label, cx, cy - 82 * s, text);
 
         text.setLetterSpacing(0f);
         text.setColor(Color.WHITE);

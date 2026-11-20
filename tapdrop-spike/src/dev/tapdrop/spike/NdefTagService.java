@@ -1,15 +1,13 @@
 package dev.tapdrop.spike;
 
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.location.Location;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.Log;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -17,14 +15,17 @@ import java.util.Arrays;
  * A reader selects the NDEF application, reads the capability container (E103),
  * then reads the NDEF file (E104). Read-only: writes are refused.
  *
- * The record comes from the slot selected in the activity: a contact card,
- * a Wi-Fi login, a UPI payment request, or a link.
+ * The record comes from the item whose share screen is open. With no share
+ * screen open the tag does not answer, so nothing leaks from the home list.
  */
 public class NdefTagService extends HostApduService {
     static final String TAG = "TapDrop";
 
-    /** Count of completed reads. The activity polls it to flash "Sent". */
+    /** Count of completed reads. The share screen polls it to flash "Sent". */
     static volatile int reads = 0;
+
+    /** Latest location fix, written by the share screen of a location item. */
+    static volatile Location fix = null;
 
     private static final byte[] NDEF_AID = hex("D2760000850101");
     private static final byte[] OK = {(byte) 0x90, 0x00};
@@ -63,14 +64,28 @@ public class NdefTagService extends HostApduService {
             byte[] data = body(apdu);
             if (p1 == 0x04) {                    // by application name
                 if (!Arrays.equals(data, NDEF_AID)) return NOT_FOUND;
-                SharedPreferences p = getSharedPreferences(Slots.PREFS, Context.MODE_PRIVATE);
-                ndefFile = buildNdefFile(p);
-                Log.d(TAG, "serving type=" + Slots.TYPES[Slots.index(p)] + " bytes=" + ndefFile.length);
                 selected = null;
                 buzzed = false;
+                Item item = Store.find(this, Store.active(this));
+                byte[] record = item == null ? null : Kinds.record(this, item, fix);
+                if (record == null) {
+                    Log.d(TAG, item == null ? "no share screen open, not answering" : "nothing to send yet for " + item.type);
+                    ndefFile = new byte[0];
+                    return NOT_FOUND;
+                }
+                if (record.length + 2 > MAX_NDEF_FILE) {
+                    Log.w(TAG, "record too large: " + record.length);
+                    ndefFile = new byte[0];
+                    return NOT_FOUND;
+                }
+                ndefFile = new byte[2 + record.length];
+                ndefFile[0] = (byte) (record.length >> 8);
+                ndefFile[1] = (byte) record.length;
+                System.arraycopy(record, 0, ndefFile, 2, record.length);
+                Log.d(TAG, "serving type=" + item.type + " bytes=" + ndefFile.length);
                 return OK;
             }
-            if (data.length == 2 && (data[0] & 0xFF) == 0xE1) {   // by file id
+            if (ndefFile.length > 0 && data.length == 2 && (data[0] & 0xFF) == 0xE1) {   // by file id
                 if ((data[1] & 0xFF) == 0x03) { selected = CC_FILE; return OK; }
                 if ((data[1] & 0xFF) == 0x04) { selected = ndefFile; return OK; }
             }
@@ -111,117 +126,11 @@ public class NdefTagService extends HostApduService {
         if (v != null) v.vibrate(VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE));
     }
 
-    // ---- NDEF building -------------------------------------------------------
-
-    /** NDEF file = 2-byte message length, then one record for the selected slot. */
-    static byte[] buildNdefFile(SharedPreferences p) {
-        byte[] record;
-        switch (Slots.index(p)) {
-            case 0:
-                record = record(0x02, ascii(p.getString(Slots.KEY_MIME, "text/vcard")),
-                    vcard(p).getBytes(StandardCharsets.UTF_8));
-                break;
-            case 1:
-                record = record(0x02, ascii("application/vnd.wfa.wsc"),
-                    wifiCredential(p.getString(Slots.KEY_SSID, Slots.DEMO_SSID),
-                        p.getString(Slots.KEY_PASS, Slots.DEMO_PASS)));
-                break;
-            case 2:
-                record = uriRecord(Slots.upiLink(p));
-                break;
-            default:
-                record = uriRecord(p.getString(Slots.KEY_URL, Slots.DEMO_URL));
-        }
-        byte[] file = new byte[2 + record.length];
-        file[0] = (byte) (record.length >> 8);
-        file[1] = (byte) record.length;
-        System.arraycopy(record, 0, file, 2, record.length);
-        return file;
-    }
-
-    /** A single-record message: MB and ME set, short form when the payload fits in one byte. */
-    static byte[] record(int tnf, byte[] type, byte[] payload) {
-        boolean shortForm = payload.length < 256;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        out.write(0x80 | 0x40 | (shortForm ? 0x10 : 0) | tnf);
-        out.write(type.length);
-        if (shortForm) {
-            out.write(payload.length);
-        } else {
-            out.write(payload.length >>> 24);
-            out.write(payload.length >>> 16);
-            out.write(payload.length >>> 8);
-            out.write(payload.length);
-        }
-        out.write(type, 0, type.length);
-        out.write(payload, 0, payload.length);
-        return out.toByteArray();
-    }
-
-    static byte[] uriRecord(String url) {
-        // NDEF URI prefix codes 1 to 4. The www forms come first so the longest prefix wins.
-        // Anything else, such as upi://, is sent whole with code 0.
-        String[] prefixes = {"http://www.", "https://www.", "http://", "https://"};
-        int code = 0;
-        String rest = url;
-        for (int i = 0; i < prefixes.length; i++) {
-            if (url.startsWith(prefixes[i])) { code = i + 1; rest = url.substring(prefixes[i].length()); break; }
-        }
-        byte[] restBytes = rest.getBytes(StandardCharsets.UTF_8);
-        byte[] payload = new byte[1 + restBytes.length];
-        payload[0] = (byte) code;
-        System.arraycopy(restBytes, 0, payload, 1, restBytes.length);
-        return record(0x01, ascii("U"), payload);
-    }
-
-    static String vcard(SharedPreferences p) {
-        String name = p.getString(Slots.KEY_NAME, Slots.DEMO_NAME);
-        StringBuilder sb = new StringBuilder();
-        sb.append("BEGIN:VCARD\r\nVERSION:3.0\r\n");
-        sb.append("FN:").append(name).append("\r\n");
-        sb.append("N:").append(name).append(";;;;\r\n");
-        String phone = p.getString(Slots.KEY_PHONE, Slots.DEMO_PHONE);
-        if (!phone.isEmpty()) sb.append("TEL;TYPE=CELL:").append(phone).append("\r\n");
-        String email = p.getString(Slots.KEY_EMAIL, "");
-        if (!email.isEmpty()) sb.append("EMAIL:").append(email).append("\r\n");
-        sb.append("END:VCARD\r\n");
-        return sb.toString();
-    }
-
-    /** Wi-Fi Simple Configuration credential for a WPA2-Personal network. */
-    static byte[] wifiCredential(String ssid, String pass) {
-        ByteArrayOutputStream cred = new ByteArrayOutputStream();
-        tlv(cred, 0x1026, new byte[] {0x01});                                 // network index
-        tlv(cred, 0x1045, ssid.getBytes(StandardCharsets.UTF_8));             // SSID
-        tlv(cred, 0x1003, new byte[] {0x00, 0x20});                           // auth: WPA2-Personal
-        tlv(cred, 0x100F, new byte[] {0x00, 0x08});                           // encryption: AES
-        tlv(cred, 0x1027, pass.getBytes(StandardCharsets.UTF_8));             // network key
-        tlv(cred, 0x1020, hex("FFFFFFFFFFFF"));                               // MAC: any
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        tlv(out, 0x104A, new byte[] {0x10});                                  // version 1.0
-        tlv(out, 0x100E, cred.toByteArray());                                 // credential
-        return out.toByteArray();
-    }
-
-    private static void tlv(ByteArrayOutputStream out, int id, byte[] value) {
-        out.write(id >> 8);
-        out.write(id);
-        out.write(value.length >> 8);
-        out.write(value.length);
-        out.write(value, 0, value.length);
-    }
-
-    // ---- helpers -------------------------------------------------------------
-
     private static byte[] body(byte[] apdu) {
         if (apdu.length < 5) return new byte[0];
         int lc = apdu[4] & 0xFF;
         if (apdu.length < 5 + lc) return new byte[0];
         return Arrays.copyOfRange(apdu, 5, 5 + lc);
-    }
-
-    private static byte[] ascii(String s) {
-        return s.getBytes(StandardCharsets.US_ASCII);
     }
 
     static byte[] hex(String s) {
