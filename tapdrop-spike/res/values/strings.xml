@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TapDrop</string>
+    <string name="service_desc">TapDrop tag</string>
+    <string name="aid_desc">Share a link by tapping</string>
+</resources>

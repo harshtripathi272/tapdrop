@@ -1,0 +1,10 @@
+# Build output
+build/
+
+# Signing keys. build.ps1 generates a throwaway debug key when none exists.
+*.keystore
+*.jks
+*.idsig
+
+# Local tool state
+.claude/
