@@ -1,11 +1,8 @@
 package dev.tapdrop.spike;
 
-import android.content.Context;
 import android.location.Location;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
 import android.util.Log;
 
 import java.util.Arrays;
@@ -105,9 +102,8 @@ public class NdefTagService extends HostApduService {
             out[n + 1] = 0x00;
             if (selected == ndefFile && offset + n >= ndefFile.length && !buzzed) {
                 buzzed = true;
-                reads++;
+                reads++;                         // the share screen sees this and buzzes the wrist
                 Log.d(TAG, "READ COMPLETE");
-                buzz();
             }
             return out;
         }
@@ -119,11 +115,6 @@ public class NdefTagService extends HostApduService {
     public void onDeactivated(int reason) {
         Log.d(TAG, "deactivated, reason=" + reason);
         selected = null;
-    }
-
-    private void buzz() {
-        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        if (v != null) v.vibrate(VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE));
     }
 
     private static byte[] body(byte[] apdu) {

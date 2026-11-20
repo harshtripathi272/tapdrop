@@ -9,12 +9,14 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Home: the list of things this watch can share. Tap one to open its share screen,
- * hold one to edit or delete it, and use the last row to add a new one.
+ * hold one to edit it, and use the last row to add another. A fresh install has no
+ * items, so the list starts as a short menu of what can be added.
  *
- * Items can also be set from a computer for testing:
+ * Items can also be set from a computer:
  *   adb shell am start -n dev.tapdrop.spike/.MainActivity --es type contact --es name "..." --es phone "..."
  *   ... --es type wifi --es ssid "..." --es pass "..."
  *   ... --es type upi  --es upi_id "..." --es upi_name "..." --es amount 250
@@ -25,6 +27,7 @@ import java.util.Arrays;
 public class MainActivity extends Activity {
     private LinearLayout column;
     private int scrollY = 0;
+    private boolean firstBuild = true;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -52,17 +55,34 @@ public class MainActivity extends Activity {
 
     private void build() {
         column = Ui.column(this);
-        column.addView(Ui.header(this, "TAPDROP", 0xFF9A9A9A));
-        for (Item item : Store.load(this)) {
-            final String id = item.id;
-            column.addView(Ui.row(this, Kinds.label(item.type), Kinds.color(item.type), Kinds.summary(item),
-                () -> startActivity(new Intent(this, ShareActivity.class).putExtra(ShareActivity.EXTRA_ID, id)),
-                () -> startActivity(new Intent(this, EditActivity.class).putExtra(EditActivity.EXTRA_ID, id))));
-        }
-        column.addView(Ui.row(this, "NEW", 0xFFB0B0B0, "Add something",
-            () -> startActivity(new Intent(this, EditActivity.class)), null));
-        column.addView(Ui.note(this, "Tap to share\nHold to edit", 0xFF707070));
+        column.addView(Ui.title(this, "TapDrop"));
 
+        LinearLayout group = Ui.group(this);
+        List<Item> items = Store.load(this);
+        if (items.isEmpty()) {
+            column.addView(Ui.body(this, "Choose what to share from your wrist.", Ui.TEXT_SECONDARY));
+            for (final String kind : Kinds.ALL) {
+                Ui.addRow(group, Ui.row(this, kind, Kinds.color(kind), Kinds.name(kind), Kinds.blurb(kind),
+                    () -> Ui.go(this, new Intent(this, EditActivity.class).putExtra(EditActivity.EXTRA_KIND, kind)),
+                    null));
+            }
+            column.addView(group);
+        } else {
+            for (Item item : items) {
+                final String id = item.id;
+                Ui.addRow(group, Ui.row(this, item.type, Kinds.color(item.type), Kinds.title(item), Kinds.rowSubtitle(item),
+                    () -> Ui.go(this, new Intent(this, ShareActivity.class).putExtra(ShareActivity.EXTRA_ID, id)),
+                    () -> Ui.go(this, new Intent(this, EditActivity.class).putExtra(EditActivity.EXTRA_ID, id))));
+            }
+            column.addView(group);
+            column.addView(Ui.card(this, Icons.ADD, Ui.NEUTRAL, "Add",
+                () -> Ui.go(this, new Intent(this, EditActivity.class))));
+        }
+
+        if (firstBuild) {
+            firstBuild = false;
+            Ui.stagger(group);      // rows arrive one after another, once per launch
+        }
         final ScrollView scroll = (ScrollView) column.getParent();
         scroll.post(() -> scroll.scrollTo(0, scrollY));
     }
@@ -73,7 +93,7 @@ public class MainActivity extends Activity {
         return super.dispatchGenericMotionEvent(ev);
     }
 
-    /** Test hook: creates or replaces one item from intent extras and opens its share screen. */
+    /** Creates or replaces one item from intent extras and opens its share screen. */
     private void takeFields(Intent intent) {
         if (intent == null) return;
         String page = intent.getStringExtra(Store.KEY_PAY_PAGE);
@@ -86,13 +106,17 @@ public class MainActivity extends Activity {
             Log.w(NdefTagService.TAG, "unknown type: " + type);
             return;
         }
-        Item item = new Item("adb-" + type, type, null);
+        // One item per kind by default. Pass --es id <name> to keep several of a kind, such as two links.
+        String name = intent.getStringExtra("id");
+        Item item = new Item("adb-" + (name == null ? type : name), type, null);
         for (Kinds.Field field : Kinds.fields(type)) {
             String value = intent.getStringExtra(field.key);
             if (value != null) Kinds.set(item, field, value);
         }
         Store.upsert(this, item);
         Log.d(NdefTagService.TAG, "item set from adb: " + type);
-        startActivity(new Intent(this, ShareActivity.class).putExtra(ShareActivity.EXTRA_ID, item.id));
+        if (!intent.getBooleanExtra("quiet", false)) {
+            Ui.go(this, new Intent(this, ShareActivity.class).putExtra(ShareActivity.EXTRA_ID, item.id));
+        }
     }
 }

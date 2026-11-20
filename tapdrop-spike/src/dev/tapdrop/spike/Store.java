@@ -22,21 +22,25 @@ final class Store {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
+    /** The user's items. A fresh install has none: nothing is shared until the user adds it. */
     static List<Item> load(Context c) {
-        String raw = prefs(c).getString(KEY_ITEMS, null);
-        if (raw == null) {
-            List<Item> samples = samples();
-            save(c, samples);
-            return samples;
-        }
         List<Item> items = new ArrayList<>();
+        String raw = prefs(c).getString(KEY_ITEMS, null);
+        if (raw == null) return items;
+        boolean droppedSamples = false;
         try {
             JSONArray array = new JSONArray(raw);
-            for (int i = 0; i < array.length(); i++) items.add(Item.fromJson(array.getJSONObject(i)));
+            for (int i = 0; i < array.length(); i++) {
+                Item item = Item.fromJson(array.getJSONObject(i));
+                // Earlier builds seeded placeholder items. They were mistaken for real data.
+                if (item.id.startsWith("sample-")) droppedSamples = true;
+                else items.add(item);
+            }
         } catch (JSONException e) {
-            // Unreadable data: start over with the samples instead of crashing on every launch.
-            return samples();
+            // Unreadable data: start empty instead of crashing on every launch.
+            return new ArrayList<>();
         }
+        if (droppedSamples) save(c, items);
         return items;
     }
 
@@ -95,35 +99,5 @@ final class Store {
     /** Web page that hands a UPI request to the payer's app. Empty until one is hosted. */
     static String payPage(Context c) {
         return prefs(c).getString(KEY_PAY_PAGE, "");
-    }
-
-    /** Placeholder items for a fresh install, so the list is never empty. */
-    private static List<Item> samples() {
-        List<Item> items = new ArrayList<>();
-
-        Item contact = new Item("sample-contact", Kinds.CONTACT, null);
-        contact.put("name", "TapDrop Test");
-        contact.put("phone", "+15550100");
-        items.add(contact);
-
-        Item wifi = new Item("sample-wifi", Kinds.WIFI, null);
-        wifi.put("ssid", "TapDrop-Test");
-        wifi.put("pass", "tapdrop1234");
-        items.add(wifi);
-
-        Item pay = new Item("sample-pay", Kinds.UPI, null);
-        pay.put("upi_id", "tapdrop.test@upi");
-        pay.put("upi_name", "TapDrop Test");
-        pay.put("amount", 0);
-        items.add(pay);
-
-        items.add(new Item("sample-location", Kinds.LOCATION, null));
-
-        Item link = new Item("sample-link", Kinds.LINK, null);
-        link.put("label", "Example");
-        link.put("url", "https://example.com/?tapdrop=it-works");
-        items.add(link);
-
-        return items;
     }
 }

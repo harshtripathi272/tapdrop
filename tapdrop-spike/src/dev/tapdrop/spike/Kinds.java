@@ -8,7 +8,7 @@ import android.text.InputType;
 import java.util.Locale;
 
 /**
- * The kinds of item TapDrop can share: how each one is labelled, which fields it
+ * The kinds of item TapDrop can share: what each one is called, which fields it
  * has, how it reads on screen, and which NDEF record a tapping phone receives.
  */
 final class Kinds {
@@ -18,7 +18,7 @@ final class Kinds {
     static final String LOCATION = "location";
     static final String LINK = "link";
 
-    /** Order shown in the "add" picker. */
+    /** Order shown when adding. */
     static final String[] ALL = {CONTACT, WIFI, UPI, LOCATION, LINK};
 
     static final int AMOUNT_STEP = 10;
@@ -29,48 +29,51 @@ final class Kinds {
 
     private Kinds() {}
 
-    /** One editable field: storage key, hint shown in the form, keyboard type, required or not. */
+    /** One editable field: storage key, label, example shown when empty, keyboard type, required or not. */
     static final class Field {
         final String key;
-        final String hint;
+        final String label;
+        final String example;
         final int inputType;
         final boolean required;
 
-        Field(String key, String hint, int inputType, boolean required) {
+        Field(String key, String label, String example, int inputType, boolean required) {
             this.key = key;
-            this.hint = hint;
+            this.label = label;
+            this.example = example;
             this.inputType = inputType;
             this.required = required;
         }
     }
 
     private static final int TEXT = InputType.TYPE_CLASS_TEXT;
+    private static final int NAME = TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME | InputType.TYPE_TEXT_FLAG_CAP_WORDS;
+    private static final int EMAIL = TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS;
 
     static Field[] fields(String type) {
         switch (type) {
             case CONTACT:
                 return new Field[] {
-                    new Field("name", "Name", TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME
-                        | InputType.TYPE_TEXT_FLAG_CAP_WORDS, true),
-                    new Field("phone", "Phone", InputType.TYPE_CLASS_PHONE, false),
-                    new Field("email", "Email", TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, false),
+                    new Field("name", "Name", "Your name", NAME, true),
+                    new Field("phone", "Phone", "+91 98765 43210", InputType.TYPE_CLASS_PHONE, false),
+                    new Field("email", "Email", "you@example.com", EMAIL, false),
                 };
             case WIFI:
                 return new Field[] {
-                    new Field("ssid", "Network name", TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, true),
-                    new Field("pass", "Password", TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, true),
+                    new Field("ssid", "Network", "Network name", TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, true),
+                    new Field("pass", "Password", "8 or more characters",
+                        TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, true),
                 };
             case UPI:
                 return new Field[] {
-                    new Field("upi_id", "UPI ID (name@bank)", TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, true),
-                    new Field("upi_name", "Your name", TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME
-                        | InputType.TYPE_TEXT_FLAG_CAP_WORDS, false),
-                    new Field("amount", "Amount, 0 for any", InputType.TYPE_CLASS_NUMBER, false),
+                    new Field("upi_id", "UPI ID", "name@bank", EMAIL, true),
+                    new Field("upi_name", "Name shown to payer", "Your name", NAME, false),
+                    new Field("amount", "Amount in rupees", "Leave empty for any", InputType.TYPE_CLASS_NUMBER, false),
                 };
             case LINK:
                 return new Field[] {
-                    new Field("label", "Title", TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES, false),
-                    new Field("url", "Link", TEXT | InputType.TYPE_TEXT_VARIATION_URI, true),
+                    new Field("label", "Title", "Instagram", TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES, false),
+                    new Field("url", "Link", "instagram.com/you", TEXT | InputType.TYPE_TEXT_VARIATION_URI, true),
                 };
             default:
                 return new Field[0];       // location has nothing to fill in
@@ -100,37 +103,39 @@ final class Kinds {
         return amount > 0 ? String.valueOf(amount) : "";
     }
 
-    static String label(String type) {
+    static String name(String type) {
         switch (type) {
-            case CONTACT: return "CONTACT";
-            case WIFI: return "WI-FI";
-            case UPI: return "PAY ME";
-            case LOCATION: return "LOCATION";
-            default: return "LINK";
+            case CONTACT: return "Contact";
+            case WIFI: return "Wi-Fi";
+            case UPI: return "Pay me";
+            case LOCATION: return "Location";
+            default: return "Link";
         }
     }
 
-    /** Wording for the "add" picker. */
-    static String addLabel(String type) {
+    /** A few words saying what the kind is for, shown when adding. Kept short: rows are narrow. */
+    static String blurb(String type) {
         switch (type) {
-            case CONTACT: return "Contact card";
-            case WIFI: return "Wi-Fi network";
-            case UPI: return "Payment request";
-            case LOCATION: return "My location";
-            default: return "Link";
+            case CONTACT: return "Your details";
+            case WIFI: return "For guests";
+            case UPI: return "UPI request";
+            case LOCATION: return "Where you are";
+            default: return "Any web link";
         }
     }
 
     static int color(String type) {
         switch (type) {
-            case CONTACT: return 0xFF4FC3F7;
-            case WIFI: return 0xFF81C784;
-            case UPI: return 0xFFFFB74D;
-            case LOCATION: return 0xFFF06292;
-            default: return 0xFFBA68C8;
+            // Solid discs with a white icon on top, so each is dark enough to carry white.
+            case CONTACT: return 0xFF5B74E8;
+            case WIFI: return 0xFF2FA968;
+            case UPI: return 0xFFE8922E;
+            case LOCATION: return 0xFFE5566A;
+            default: return 0xFF8E63D9;
         }
     }
 
+    /** The large line: on the share screen and as the row title in the list. */
     static String title(Item item) {
         switch (item.type) {
             case CONTACT: return item.get("name");
@@ -153,19 +158,24 @@ final class Kinds {
     static String subtitle(Item item, Location fix) {
         switch (item.type) {
             case CONTACT: return item.get("phone").isEmpty() ? item.get("email") : item.get("phone");
-            case WIFI: return "Tap to join";
+            case WIFI: return "Wi-Fi network";
             case UPI: return "to " + (item.get("upi_name").isEmpty() ? item.get("upi_id") : item.get("upi_name"));
             case LOCATION:
                 return usable(fix)
                     ? String.format(Locale.US, "%.5f, %.5f", fix.getLatitude(), fix.getLongitude())
                     : "Finding you…";
-            default: return link(item);
+            default: return bare(link(item));
         }
     }
 
-    /** One line for the home list, under the type label. */
-    static String summary(Item item) {
-        return item.type.equals(UPI) ? title(item) + " " + subtitle(item, null) : title(item);
+    /** The second line of a row in the home list. */
+    static String rowSubtitle(Item item) {
+        switch (item.type) {
+            case WIFI: return "Wi-Fi";
+            case UPI: return item.get("upi_id");
+            case LOCATION: return "Live position";
+            default: return subtitle(item, null);
+        }
     }
 
     static boolean usable(Location fix) {
@@ -194,6 +204,12 @@ final class Kinds {
     private static String link(Item item) {
         String url = item.get("url").trim();
         return url.contains("://") || url.startsWith("tel:") || url.startsWith("mailto:") ? url : "https://" + url;
+    }
+
+    /** A link without its scheme or a trailing slash, for display. */
+    private static String bare(String url) {
+        String s = url.replaceFirst("^https?://(www\\.)?", "");
+        return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
     }
 
     /**

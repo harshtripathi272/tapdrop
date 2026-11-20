@@ -74,6 +74,17 @@ $apk = Join-Path $b 'tapdrop-spike.apk'
 & "$bt\apksigner.bat" sign --ks $ks --ks-pass pass:android --key-pass pass:android --out $apk "$b\aligned.apk"; Assert-Ok 'apksigner'
 Write-Host "Built $apk" -ForegroundColor Green
 
+# Keep the copies bundled with the shareable skill in step with the source.
+$repo = Split-Path $root
+$skill = Join-Path $repo 'skill\tapdrop-watch'
+if (Test-Path $skill) {
+    $assets = Join-Path $skill 'assets'
+    New-Item -ItemType Directory -Force -Path $assets | Out-Null
+    Copy-Item $apk (Join-Path $assets 'tapdrop.apk') -Force
+    Copy-Item (Join-Path $repo 'web\pay.html') (Join-Path $assets 'pay.html') -Force
+    Write-Host "Updated skill assets" -ForegroundColor Green
+}
+
 if ($NoInstall) { return }
 
 # Pick the watch by hardware type, so a phone connected at the same time is never the target.

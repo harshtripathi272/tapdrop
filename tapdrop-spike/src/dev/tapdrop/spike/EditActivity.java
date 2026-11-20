@@ -1,10 +1,13 @@
 package dev.tapdrop.spike;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -13,34 +16,48 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Adds a new item or edits an existing one. Opened without an id it first asks
- * which kind of item to add, then shows that kind's form.
+ * Adds a new item or edits an existing one.
+ * Opened with an item id it edits that item. Opened with a kind it shows that
+ * kind's empty form. Opened with neither it first asks which kind to add.
  */
 public class EditActivity extends Activity {
     static final String EXTRA_ID = "id";
+    static final String EXTRA_KIND = "kind";
     private static final String UPI_ID_PATTERN = "^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9._-]{2,64}$";
+    private static final int ASK_WIFI = 2;
 
     private LinearLayout column;
     private Item existing;
     private String type;
     private final List<EditText> inputs = new ArrayList<>();
-    private TextView error;
+    private TextView message;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         existing = Store.find(this, getIntent().getStringExtra(EXTRA_ID));
+        String kind = getIntent().getStringExtra(EXTRA_KIND);
         if (existing != null) showForm(existing.type);
+        else if (kind != null) pick(kind);
         else showPicker();
     }
 
     private void showPicker() {
         column = Ui.column(this);
-        column.addView(Ui.header(this, "ADD", 0xFF9A9A9A));
+        column.addView(Ui.title(this, "Add"));
+        LinearLayout group = Ui.group(this);
         for (final String kind : Kinds.ALL) {
-            column.addView(Ui.row(this, Kinds.label(kind), Kinds.color(kind), Kinds.addLabel(kind),
+            Ui.addRow(group, Ui.row(this, kind, Kinds.color(kind), Kinds.name(kind), Kinds.blurb(kind),
                 () -> pick(kind), null));
         }
+        column.addView(group);
+        Ui.stagger(group);
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        Ui.leave(this);
     }
 
     private void pick(String kind) {
@@ -56,38 +73,82 @@ public class EditActivity extends Activity {
         type = kind;
         inputs.clear();
         column = Ui.column(this);
-        column.addView(Ui.header(this, Kinds.label(kind), Kinds.color(kind)));
+        column.addView(Ui.heading(this, kind, Kinds.color(kind), Kinds.name(kind)));
+
+        if (kind.equals(Kinds.WIFI)) {
+            column.addView(Ui.secondaryButton(this, "Use current Wi-Fi", Ui.ACCENT, this::fillCurrentWifi));
+        }
 
         Kinds.Field[] fields = Kinds.fields(kind);
         for (Kinds.Field field : fields) {
             EditText input = new EditText(this);
-            input.setHint(field.hint);
+            input.setHint(field.example);
             input.setInputType(field.inputType);
-            input.setSingleLine(true);
-            input.setTextSize(15);
-            input.setImeOptions(EditorInfo.IME_ACTION_DONE);
             if (existing != null) input.setText(Kinds.text(existing, field));
-            input.setLayoutParams(Ui.spaced(this));
-            column.addView(input);
+            column.addView(Ui.field(this, field.label, input));
             inputs.add(input);
         }
 
-        error = Ui.note(this, "", 0xFFFF8A80);
-        error.setVisibility(View.GONE);
-        column.addView(error);
+        message = Ui.body(this, "", Ui.TEXT_SECONDARY);
+        message.setVisibility(View.GONE);
+        column.addView(message);
 
         if (fields.length > 0) {
-            column.addView(Ui.button(this, "Save", Kinds.color(kind), 0xFF101010, this::save));
+            column.addView(Ui.primaryButton(this, "Save", this::save));
         } else {
-            column.addView(Ui.note(this, "Nothing to edit here", 0xFF8A8A8A));
+            say("Nothing to set. It shares where the watch is when you tap.", false);
         }
         if (existing != null) {
-            column.addView(Ui.button(this, "Delete", 0xFF2A1B1B, 0xFFFF8A80, () -> {
+            column.addView(Ui.textButton(this, "Delete", Ui.DANGER, () -> {
                 Store.delete(this, existing.id);
                 finish();
             }));
         }
+
+        // A new Wi-Fi item starts with the connected network when the watch may already read it.
+        if (kind.equals(Kinds.WIFI) && existing == null
+                && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            String ssid = currentSsid();
+            if (ssid != null) inputs.get(0).setText(ssid);
+        }
     }
+
+    // ---- Wi-Fi ---------------------------------------------------------------
+
+    private void fillCurrentWifi() {
+        // Android only reveals the network name to apps that hold location permission.
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, ASK_WIFI);
+            return;
+        }
+        String ssid = currentSsid();
+        if (ssid == null) {
+            say("This watch isn't on Wi-Fi right now. It may be using the phone's connection.", true);
+            return;
+        }
+        inputs.get(0).setText(ssid);
+        say("Type the password once. Android doesn't let apps read saved passwords.", false);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
+        if (code != ASK_WIFI) return;
+        if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) fillCurrentWifi();
+        else say("Without location access the watch can't read the network name. Type it instead.", true);
+    }
+
+    /** The name of the Wi-Fi network the watch is connected to, or null. */
+    @SuppressWarnings("deprecation")
+    private String currentSsid() {
+        WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+        WifiInfo info = wifi == null ? null : wifi.getConnectionInfo();
+        String ssid = info == null ? null : info.getSSID();
+        if (ssid == null || ssid.isEmpty() || ssid.equals(WifiManager.UNKNOWN_SSID)) return null;
+        if (ssid.length() >= 2 && ssid.startsWith("\"") && ssid.endsWith("\"")) ssid = ssid.substring(1, ssid.length() - 1);
+        return ssid;
+    }
+
+    // ---- saving --------------------------------------------------------------
 
     private void save() {
         Kinds.Field[] fields = Kinds.fields(type);
@@ -95,26 +156,27 @@ public class EditActivity extends Activity {
         for (int i = 0; i < fields.length; i++) {
             String raw = inputs.get(i).getText().toString().trim();
             if (fields[i].required && raw.isEmpty()) {
-                fail(fields[i].hint + " is needed");
+                say(fields[i].label + " is needed", true);
                 return;
             }
             Kinds.set(item, fields[i], raw);
         }
         if (type.equals(Kinds.UPI) && !item.get("upi_id").matches(UPI_ID_PATTERN)) {
-            fail("UPI ID should look like name@bank");
+            say("A UPI ID looks like name@bank", true);
             return;
         }
         if (type.equals(Kinds.WIFI) && item.get("pass").length() < 8) {
-            fail("Password needs 8 or more characters");
+            say("The password needs 8 or more characters", true);
             return;
         }
         Store.upsert(this, item);
         finish();
     }
 
-    private void fail(String message) {
-        error.setText(message);
-        error.setVisibility(View.VISIBLE);
+    private void say(String text, boolean problem) {
+        message.setText(text);
+        message.setTextColor(problem ? Ui.DANGER : Ui.TEXT_SECONDARY);
+        message.setVisibility(View.VISIBLE);
     }
 
     @Override

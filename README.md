@@ -19,19 +19,33 @@ Galaxy S24 Ultra (Android 17). Not tested on an iPhone.
 
 ## Using it
 
-The home screen is a list of your items. Tap one to open its share screen,
-then hold the watch to a phone. Hold a row to edit or delete it. The last row
-adds a new item. On a payment request, the bezel sets the amount in steps of
-10 rupees.
+A fresh install has no items. The home screen lists what you can add: contact,
+Wi-Fi, pay me, location, link. Add one and it becomes a row in your list.
+
+Tap a row to open its share screen, then hold the watch to a phone. Tap **Edit**
+on that screen to change or delete the item. The last row of the list adds
+another. On a payment request, the bezel sets the amount in steps of 10 rupees.
+
+In the Wi-Fi form, "Use current Wi-Fi" fills in the network the watch is
+connected to. The password is always typed once, because Android gives no app
+access to saved Wi-Fi passwords.
 
 The watch answers a phone only while a share screen is open, and only with
 that item.
+
+## Setting it up with Claude
+
+`skill/tapdrop-watch/` is a Claude skill that walks through the whole setup on
+someone else's machine: installing adb, pairing the watch, installing the app
+and filling in their details. It bundles a prebuilt APK, so no JDK or Android
+SDK is needed. `build.ps1` refreshes that APK on every build.
 
 ## Limits
 
 - Samsung Health registers the same NFC tag ID, and only the foreground app
   can claim priority. So the share screen has to be on screen.
-- Items are typed on the watch keyboard. There is no phone companion app yet.
+- Items are typed on the watch keyboard, or set from a computer over adb.
+  There is no phone companion app yet.
 - `web/pay.html` has to be reachable by the payer's phone. It is not hosted
   anywhere yet.
 - Wi-Fi passwords are stored unencrypted in the app's private storage on the
@@ -46,8 +60,12 @@ that item.
   - `Item.java`, `Store.java` hold the user's items.
   - `MainActivity.java` is the list, `ShareActivity.java` and `CardView.java`
     the share screen, `EditActivity.java` the add and edit forms.
+  - `Ui.java` holds colours, type and shared view pieces. `Icons.java` draws
+    the icons in code, so there are no image files.
   - `build.ps1` builds and installs without Gradle.
 - `web/pay.html` — static page that hands a UPI request to the payer's app.
+- `skill/tapdrop-watch/` — the setup skill: instructions, `scripts/watch.py`,
+  a troubleshooting guide, and the bundled APK and pay page.
 - `reconnect-watch.ps1`, `pair-device.ps1` — adb over Wi-Fi helpers.
 
 ## Build
