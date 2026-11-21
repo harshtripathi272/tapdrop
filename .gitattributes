@@ -7,4 +7,7 @@
 # Never touch these.
 *.apk binary
 *.png binary
+*.jpg binary
+*.gif binary
+*.mp4 binary
 *.keystore binary
