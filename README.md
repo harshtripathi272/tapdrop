@@ -7,6 +7,13 @@
   Pick something on your wrist, tap any phone, and that phone gets it. The other phone needs no app.
 </p>
 
+<p align="center">
+  <a href="https://harshtripathi272.github.io/tapdrop/#video">
+    <img src="docs/promo.gif" alt="A phone touches a watch. The screen floods with colour and the phone shows a saved contact, then a payment request for 250 rupees." width="720">
+  </a><br>
+  <a href="https://harshtripathi272.github.io/tapdrop/#video"><b>Watch the 46 second video, with sound</b></a>
+</p>
+
 ## Start here
 
 | You have | Go to |

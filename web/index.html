@@ -20,6 +20,11 @@
     display: flex; align-items: center; justify-content: center; padding: 32px 16px;
   }
   main { width: 100%; max-width: 440px; text-align: center; }
+  /* The video is wider than the text column, so it breaks out of it on large screens. */
+  video {
+    display: block; width: min(880px, calc(100vw - 32px)); margin: 30px 0 6px 50%;
+    transform: translateX(-50%); aspect-ratio: 16 / 9; border-radius: 18px; background: #000;
+  }
   .mark { width: 96px; height: 96px; border-radius: 26px; background: var(--accent); margin: 0 auto 22px; }
   h1 { font-size: 40px; line-height: 1.1; margin: 0 0 10px; letter-spacing: -0.01em; }
   p { margin: 0 0 12px; color: var(--muted); }
@@ -43,6 +48,10 @@
   <p>Pick something on your wrist, tap any phone, and that phone gets it: a contact, Wi-Fi,
      a payment request, your location or a link. The other phone needs no app.</p>
   <a class="button" href="https://github.com/harshtripathi272/tapdrop">Get it on GitHub</a>
+  <video id="video" controls playsinline preload="metadata" poster="promo-poster.jpg">
+    <source src="promo.mp4" type="video/mp4">
+    <a href="promo.mp4">Watch the video</a>
+  </video>
   <p class="note">This site also hosts the page a "Pay me" tap opens. It reads the request from
      the link itself and stores nothing.</p>
 </main>
