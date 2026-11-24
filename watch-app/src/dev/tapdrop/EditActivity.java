@@ -82,7 +82,7 @@ public class EditActivity extends Activity {
         column.addView(Ui.heading(this, kind, Kinds.color(kind), Kinds.name(kind)));
 
         if (kind.equals(Kinds.WIFI)) {
-            column.addView(Ui.secondaryButton(this, "Use current Wi-Fi", Ui.ACCENT, this::fillCurrentWifi));
+            column.addView(Ui.secondaryButton(this, "Use current Wi-Fi", Ui.theme(this).accent, this::fillCurrentWifi));
         }
 
         Kinds.Field[] fields = Kinds.fields(kind);
@@ -95,12 +95,12 @@ public class EditActivity extends Activity {
             inputs.add(input);
         }
 
-        message = Ui.body(this, "", Ui.TEXT_SECONDARY);
+        message = Ui.body(this, "", Ui.theme(this).textSecondary);
         message.setVisibility(View.GONE);
         column.addView(message);
 
         if (fields.length > 0) {
-            column.addView(Ui.primaryButton(this, "Save", this::save));
+            Ui.mainAction(this, column, "Save", this::save);
         } else {
             say("Nothing to set. It shares where the watch is when you tap.", false);
         }
@@ -108,14 +108,14 @@ public class EditActivity extends Activity {
             // The quick-tap item is what goes out when someone taps while TapDrop is closed.
             if (existing.id.equals(Store.quick(this))) {
                 column.addView(Ui.body(this,
-                    "Quick tap: this is shared when someone taps while TapDrop is closed.", Ui.TEXT_SECONDARY));
+                    "Quick tap: this is shared when someone taps while TapDrop is closed.", Ui.theme(this).textSecondary));
             } else {
-                column.addView(Ui.secondaryButton(this, "Use for quick tap", Ui.ACCENT, () -> {
+                column.addView(Ui.secondaryButton(this, "Use for quick tap", Ui.theme(this).accent, () -> {
                     Store.setQuick(this, existing.id);
                     finish();
                 }));
             }
-            column.addView(Ui.textButton(this, "Delete", Ui.DANGER, () -> {
+            column.addView(Ui.textButton(this, "Delete", Ui.theme(this).danger, () -> {
                 Store.delete(this, existing.id);
                 finish();
             }));
@@ -191,7 +191,7 @@ public class EditActivity extends Activity {
 
     private void say(String text, boolean problem) {
         message.setText(text);
-        message.setTextColor(problem ? Ui.DANGER : Ui.TEXT_SECONDARY);
+        message.setTextColor(problem ? Ui.theme(this).danger : Ui.theme(this).textSecondary);
         message.setVisibility(View.VISIBLE);
     }
 

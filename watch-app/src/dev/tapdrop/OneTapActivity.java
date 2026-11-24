@@ -49,21 +49,19 @@ public class OneTapActivity extends Activity {
         // Which item goes out when a phone taps while TapDrop is closed or the display sleeps.
         column.addView(Ui.body(this,
             "What a phone gets when it taps while TapDrop is closed or the screen is off.",
-            Ui.TEXT_SECONDARY));
+            Ui.theme(this).textSecondary));
         String quick = Store.quick(this);
         LinearLayout choices = Ui.group(this);
         for (Item item : Store.load(this)) {
             final String id = item.id;
             boolean chosen = id.equals(quick);
-            Ui.addRow(choices, Ui.row(this, chosen ? Icons.CHECK : item.type,
-                chosen ? Ui.ACCENT : Kinds.color(item.type), Kinds.title(item),
-                chosen ? "Shared when closed" : Kinds.rowSubtitle(item),
-                () -> { Store.setQuick(this, id); build(null, false); }, null));
+            Ui.addRow(choices, Ui.choice(this, item.type, Kinds.color(item.type), Kinds.title(item),
+                chosen ? "Shared when closed" : Kinds.rowSubtitle(item), chosen,
+                () -> { Store.setQuick(this, id); build(null, false); }));
         }
-        Ui.addRow(choices, Ui.row(this, quick == null ? Icons.CHECK : Icons.NONE,
-            quick == null ? Ui.ACCENT : Ui.NEUTRAL, "Nothing",
-            quick == null ? "Silent when closed" : "Stay silent",
-            () -> { Store.setQuick(this, Store.QUICK_NONE); build(null, false); }, null));
+        Ui.addRow(choices, Ui.choice(this, Icons.NONE, Ui.theme(this).neutral, "Nothing",
+            quick == null ? "Silent when closed" : "Stay silent", quick == null,
+            () -> { Store.setQuick(this, Store.QUICK_NONE); build(null, false); }));
         column.addView(choices);
 
         // Whether that takes one tap or two.
@@ -71,28 +69,27 @@ public class OneTapActivity extends Activity {
         if (on) {
             column.addView(Ui.body(this,
                 "On. A phone that touches this watch gets the item above straight away, screen on or off.",
-                Ui.TEXT_SECONDARY));
+                Ui.theme(this).textSecondary));
         } else {
             column.addView(Ui.body(this,
                 "Off. The watch first asks you to pick an app, then the phone taps again. "
                     + "That is because Samsung Health also answers NFC taps.",
-                Ui.TEXT_SECONDARY));
+                Ui.theme(this).textSecondary));
         }
 
         if (result != null) {
-            TextView r = Ui.body(this, result, problem ? Ui.DANGER : Ui.TEXT);
+            TextView r = Ui.body(this, result, problem ? Ui.theme(this).danger : Ui.theme(this).text);
             column.addView(r);
         }
 
-        if (on) {
-            column.addView(Ui.secondaryButton(this, "Turn off", Ui.ACCENT, () -> apply(false)));
-        } else {
-            column.addView(Ui.primaryButton(this, "Turn on", () -> apply(true)));
+        // A switch row in Material; "Turn on" or "Turn off" buttons in One UI.
+        column.addView(Ui.toggle(this, "Share in one tap", on ? "On" : "Off", on, () -> apply(!on)));
+        if (!on) {
             column.addView(Ui.body(this,
                 "Turning it on switches off Samsung Health's NFC tag feature, which some gym machines use. "
                     + "No one will be asked before the item above is sent, even while the screen is off, "
                     + "so keep it to something you'd hand to a stranger.",
-                Ui.TEXT_TERTIARY));
+                Ui.theme(this).textTertiary));
         }
     }
 

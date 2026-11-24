@@ -23,6 +23,7 @@ import java.util.List;
  *   ... --es type link --es label "..." --es url "https://..."
  *   ... --es type location
  *   ... --es pay_page "https://.../pay.html"      (where UPI requests are sent, see Kinds.payLink)
+ *   ... --es theme oneui | material | auto        (the app's look, see Theme)
  */
 public class MainActivity extends Activity {
     private LinearLayout column;
@@ -55,13 +56,13 @@ public class MainActivity extends Activity {
 
     private void build() {
         column = Ui.column(this);
-        column.addView(Ui.title(this, "TapDrop"));
+        column.addView(Ui.appTitle(this, "TapDrop"));
 
         // The user's own items first.
         List<Item> items = Store.load(this);
         LinearLayout mine = Ui.group(this);
         if (items.isEmpty()) {
-            column.addView(Ui.body(this, "Choose what to share from your wrist.", Ui.TEXT_SECONDARY));
+            column.addView(Ui.body(this, "Choose what to share from your wrist.", Ui.theme(this).textSecondary));
         } else {
             String quick = Store.quick(this);
             for (Item item : items) {
@@ -90,9 +91,16 @@ public class MainActivity extends Activity {
         // What goes out when a phone taps while TapDrop is closed, and how.
         Item quickItem = Store.find(this, Store.quick(this));
         column.addView(Ui.section(this, "When TapDrop is closed"));
-        column.addView(Ui.card(this, Icons.CHECK, Ui.NEUTRAL, "Quick tap",
+        column.addView(Ui.card(this, Icons.CHECK, Ui.theme(this).neutral, "Quick tap",
             quickItem == null ? "Shares nothing" : "Shares " + Kinds.title(quickItem),
             () -> Ui.go(this, new Intent(this, OneTapActivity.class))));
+
+        // One UI or Material 3 Expressive. Each watch starts in the look of its own maker.
+        Theme theme = Ui.theme(this);
+        column.addView(Ui.section(this, "Look"));
+        column.addView(Ui.card(this, Icons.STYLE, theme.neutral, "Style",
+            Theme.AUTO.equals(Theme.choice(this)) ? "Automatic · " + theme.shortName : theme.shortName,
+            () -> Ui.go(this, new Intent(this, StyleActivity.class))));
 
         if (firstBuild) {
             firstBuild = false;
@@ -120,6 +128,17 @@ public class MainActivity extends Activity {
             Store.prefs(this).edit().putString(Store.KEY_PAY_PAGE, page.trim()).apply();
             intent.removeExtra(Store.KEY_PAY_PAGE);
             Log.d(NdefTagService.TAG, "pay page set" + mark);
+        }
+
+        String look = intent.getStringExtra("theme");
+        if (look != null) {
+            intent.removeExtra("theme");
+            if (look.equals(Theme.AUTO) || look.equals(Theme.ONE_UI) || look.equals(Theme.MATERIAL)) {
+                Theme.choose(this, look);
+                Log.d(NdefTagService.TAG, "theme set: " + look + mark);
+            } else {
+                Log.w(NdefTagService.TAG, "unknown theme: " + look);
+            }
         }
 
         String type = intent.getStringExtra("type");

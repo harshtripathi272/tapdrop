@@ -1,5 +1,7 @@
 # Build output
 build/
+# Libraries downloaded by the build scripts, from watch-app/libraries.txt
+.libs/
 dist/
 __pycache__/
 
@@ -10,3 +12,5 @@ __pycache__/
 
 # Local tool state
 .claude/
+# macOS Finder metadata
+.DS_Store

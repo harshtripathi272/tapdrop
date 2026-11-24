@@ -8,12 +8,13 @@ import android.graphics.Typeface;
 
 /**
  * Line icons drawn in code on a 24-unit grid, so the app ships no image files.
- * One per item kind, plus "add" and "check". Call from the UI thread only.
+ * One per item kind, plus "add", "check", "none" and "style". Call from the UI thread only.
  */
 final class Icons {
     static final String ADD = "add";
     static final String CHECK = "check";
     static final String NONE = "none";
+    static final String STYLE = "style";
 
     private static final Paint STROKE = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static final Paint FILL = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -109,6 +110,12 @@ final class Icons {
             case NONE:              // a circle with a line through it
                 canvas.drawCircle(12f, 12f, 7f, STROKE);
                 canvas.drawLine(7.2f, 16.8f, 16.8f, 7.2f, STROKE);
+                break;
+
+            case STYLE:             // a circle, half filled: the app's light and shade
+                canvas.drawCircle(12f, 12f, 7.5f, STROKE);
+                OVAL.set(4.5f, 4.5f, 19.5f, 19.5f);
+                canvas.drawArc(OVAL, 90f, 180f, true, FILL);
                 break;
 
             case CHECK:
