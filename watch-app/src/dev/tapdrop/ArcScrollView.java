@@ -2,6 +2,7 @@ package dev.tapdrop;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.SystemClock;
@@ -52,14 +53,16 @@ public class ArcScrollView extends ScrollView {
         oval.set(inset, inset, getWidth() - inset, getHeight() - inset);
         paint.setStrokeWidth(stroke);
 
-        paint.setColor(0xFFFFFFFF);
-        paint.setAlpha(Math.round(46 * visible));
+        Theme t = Theme.of(getContext());
+        paint.setColor(t.scrollTrack);
+        paint.setAlpha(Math.round(Color.alpha(t.scrollTrack) * visible));
         canvas.drawArc(oval, -TRACK_SWEEP / 2f, TRACK_SWEEP, false, paint);
 
         float shown = getHeight() / (float) getChildAt(0).getHeight();
         float thumb = Math.max(9f, TRACK_SWEEP * shown);
         float position = Math.max(0f, Math.min(1f, getScrollY() / (float) range));
-        paint.setAlpha(Math.round(225 * visible));
+        paint.setColor(t.scrollThumb);
+        paint.setAlpha(Math.round(Color.alpha(t.scrollThumb) * visible));
         canvas.drawArc(oval, -TRACK_SWEEP / 2f + (TRACK_SWEEP - thumb) * position, thumb, false, paint);
         canvas.restore();
 

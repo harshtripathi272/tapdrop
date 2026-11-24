@@ -83,8 +83,10 @@ Claude users can also install the setup procedure as a skill: package `skill/tap
 | **Link** | Any web address: your Instagram, a portfolio, a video. |
 | **Learned tag** | Whatever an NFC tag app wrote to the watch. See [Learn from phone](#learn-from-phone). |
 
-The app is built to look like part of the watch: Samsung One UI's grouped rows, colours and type,
-with a curved scroll indicator. It is about 40 KB.
+The app is built to look like part of the watch. It has two looks: Samsung One UI's grouped rows,
+colours and type, and Wear OS's Material 3 Expressive: pill buttons that morph when pressed, Roboto Flex,
+radio and switch rows, edge-hugging buttons, and the watch's own dynamic colours when they are on. A Galaxy Watch starts in One UI and any other watch in
+Material 3; **Style** at the bottom of the home screen switches between them.
 
 ## Sharing with the app closed
 

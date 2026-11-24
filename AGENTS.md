@@ -62,6 +62,9 @@ These exist because the work touches someone's own watch and phone.
   be shared) and `NdefTagService.java` (the NFC side).
   [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) explains the parts that are not
   obvious from the code.
+- Screens are built with `Ui.java` and take every colour, size and shape from
+  `Theme.java`, which holds the One UI and Material 3 Expressive looks. Don't
+  hard-code colours in a screen: use `Ui.theme(context)`.
 - Build with `watch-app/build.ps1`. It needs Windows, a JDK 11 or newer, and it
   downloads Android build-tools 35 and platform 35 from Google on first run,
   checked against Google's checksums. There is no build script for macOS or

@@ -19,16 +19,15 @@ import android.os.SystemClock;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
 /**
  * One item, ready to share. While this screen is open the watch answers NFC readers
@@ -79,21 +78,9 @@ public class ShareActivity extends Activity {
         root.addView(card, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
         // Editing is one tap away, so nobody has to discover a long-press to change their details.
-        TextView edit = new TextView(this);
-        edit.setText("Edit");
-        edit.setTextColor(Ui.TEXT);
-        edit.setTextSize(13);
-        edit.setTypeface(Ui.MEDIUM);
-        edit.setPadding(Ui.dp(this, 22), Ui.dp(this, 8), Ui.dp(this, 22), Ui.dp(this, 8));
-        edit.setBackground(Ui.pill(this, Ui.CONTAINER, 20));
-        edit.setOnClickListener(v ->
+        View edit = Ui.bottomButton(this, "Edit", () ->
             Ui.go(this, new Intent(this, EditActivity.class).putExtra(EditActivity.EXTRA_ID, id)));
-        Ui.pressScale(edit);
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-            Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        lp.bottomMargin = Math.round(getResources().getDisplayMetrics().heightPixels * 0.08f);
-        root.addView(edit, lp);
+        root.addView(edit);
 
         setContentView(root);
         seenReads = NdefTagService.reads;
